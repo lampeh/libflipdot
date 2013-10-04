@@ -7,8 +7,8 @@ int main(void) {
 		return 1;
 
 	// shut down GPIOs on exit
-	signal(SIGINT, flipdot_shutdown);
-	signal(SIGTERM, flipdot_shutdown);
+	signal(SIGINT, (__sighandler_t)flipdot_shutdown);
+	signal(SIGTERM, (__sighandler_t)flipdot_shutdown);
 
 	flipdot_init();
 	flipdot_clear_to_1();

@@ -19,8 +19,8 @@ int main(void) {
 		return 1;
 
 	// shut down GPIOs on exit
-	signal(SIGINT, flipdot_shutdown);
-	signal(SIGTERM, flipdot_shutdown);
+	signal(SIGINT, (__sighandler_t)flipdot_shutdown);
+	signal(SIGTERM, (__sighandler_t)flipdot_shutdown);
 
 #if 1
 	puts("flipdot_init()");
