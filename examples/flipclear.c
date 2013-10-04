@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <bcm2835.h>
 #include "flipdot.h"
 

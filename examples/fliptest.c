@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/param.h>
 #include <time.h>
+#include <signal.h>
 #include <bcm2835.h>
 #include "flipdot.h"
 
