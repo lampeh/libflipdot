@@ -2,21 +2,25 @@ SOURCES=examples/flip_pipe.c examples/fliptest.c examples/flipclear.c examples/f
 
 CPPFLAGS=-I.
 CFLAGS=-O3 -flto -Wall -std=gnu99 -pedantic -funroll-loops -fno-common -ffunction-sections
-LDFLAGS=-lbcm2835 -flto -Wl,--relax,--gc-sections
+LDFLAGS=-flto -Wl,--relax,--gc-sections -L . -lflipdot -lbcm2835
 
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLES=$(SOURCES:.c=)
+LIBRARIES=libflipdot.a
 
-all: $(EXECUTABLES)
+all: $(EXECUTABLES) $(LIBRARIES)
 
 clean:
-	-rm $(EXECUTABLES) $(OBJECTS) flipdot.o
+	-rm $(EXECUTABLES) $(OBJECTS) $(LIBRARIES) flipdot.o
 
 flipdot.o: flipdot.c flipdot.h
-	$(CC) $(CFLAGS) -c -DNOSLEEP -DGPIO_MULTI flipdot.c -o flipdot.o
+	$(CC) $(CFLAGS) $(CPPFLAGS) -DNOSLEEP -DGPIO_MULTI -c -o $@ $<
 
-$(EXECUTABLES): % : %.o flipdot.o
-	$(CC) -o $@ $^ $(LDFLAGS)
+$(EXECUTABLES): % : %.o $(LIBRARIES)
+	$(CC) -o $@ $< $(LDFLAGS)
+
+$(LIBRARIES): flipdot.o
+	$(AR) rcs $@ $^
 
 %.dep: %.c
 	$(CC) $(CPPFLAGS) -MM -MT $(<:.c=.o) -MP -MF $@ $<
