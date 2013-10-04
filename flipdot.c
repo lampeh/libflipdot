@@ -339,7 +339,7 @@ sreg_fill2(uint8_t *row_data, uint_fast16_t row_count, uint8_t *col_data, uint_f
 {
 	while (row_count || col_count) {
 
-		_hw_clear_multi(_BV(DATA(ROW)) | _BV(DATA(COL)));
+		_hw_clr_multi(_BV(DATA(ROW)) | _BV(DATA(COL)));
 		_hw_set_multi( ((row_count && ISBITSET(row_data, row_count - 1))?(_BV(DATA(ROW))):(0)) |
 						((col_count && ISBITSET(col_data, col_count - 1))?(_BV(DATA(COL))):(0)));
 
