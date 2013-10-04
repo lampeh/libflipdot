@@ -1,4 +1,7 @@
-# Flipdot library
+libflipdot
+==========
+
+Flip Dot Display driver
 
 * Install [bcm2835](http://www.airspayce.com/mikem/bcm2835/) library
 * Edit flipdot.h
