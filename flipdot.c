@@ -1,25 +1,3 @@
-/*
-* Copyright (c) 2013 Franz Nord
-*
-* This program is free software; you can redistribute it and/or
-* modify it under the terms of the GNU General Public License
-* as published by the Free Software Foundation; either version 3
-* of the License, or (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-*
-* For more information on the GPL, please go to:
-* http://www.gnu.org/copyleft/gpl.html
-*/
-
-
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
@@ -28,26 +6,21 @@
 #include "flipdot.h"
 
 
-#define ISBITSET(b,i) ((((b)[(i) >> 3]) & (1 << ((i) & 7))) != 0)
 #define SETBIT(b,i) (((b)[(i) >> 3]) |= (1 << ((i) & 7)))
-#define CLEARBIT(b,i) (((b)[(i) >> 3]) &=~ (1 << ((i) & 7)))
+#define ISBITSET(b,i) ((((b)[(i) >> 3]) & (1 << ((i) & 7))) != 0)
 
 #ifndef _BV
 #define _BV(x) (1 << (x))
 #endif
 
-#define DATA(reg) (((reg) == ROW) ? (DATA_ROW) : (DATA_COL))
-#define CLK(reg) (((reg) == ROW) ? (CLK_ROW) : (CLK_COL))
-#define OE(reg) (((reg) == ROW) ? (OE_ROW) : (OE_COL))
 
-static uint8_t frame_a[FRAME_BYTE_COUNT];
-static uint8_t frame_b[FRAME_BYTE_COUNT];
+static uint8_t frames[FRAME_BYTE_COUNT][2];
 static uint8_t *frame_new, *frame_old;
 
-static void sreg_push_bit(enum sreg reg, uint_fast8_t bit);
-static void sreg_fill(enum sreg reg, uint8_t *data, uint_fast16_t count);
-static void sreg_fill2(uint8_t *row_data, uint_fast16_t row_count, uint8_t *col_data, uint_fast16_t col_count);
-static void strobe(void);
+
+static void sreg_fill_col(uint8_t *col_data, uint_fast16_t col_count);
+static void sreg_fill_both(uint8_t *row_data, uint_fast16_t row_count, uint8_t *col_data, uint_fast16_t col_count);
+static void sreg_strobe(void);
 static void flip_to_0(void);
 static void flip_to_1(void);
 
@@ -152,10 +125,10 @@ flipdot_init(void)
 {
 	_hw_init();
 
-	memset(frame_a, 0x00, sizeof(frame_a));
-	memset(frame_b, 0x00, sizeof(frame_b));
-	frame_old = frame_a;
-	frame_new = frame_b;
+	memset(frames[0], 0x00, FRAME_BYTE_COUNT);
+	memset(frames[1], 0x00, FRAME_BYTE_COUNT);
+	frame_old = frames[0];
+	frame_new = frames[1];
 }
 
 void
@@ -189,25 +162,23 @@ flipdot_clear(void)
 void
 flipdot_display_row(uint8_t *rows, uint8_t *cols)
 {
-	sreg_fill2(rows, REGISTER_ROWS, cols, REGISTER_COLS);
-	strobe();
+	sreg_fill_both(rows, REGISTER_ROWS, cols, REGISTER_COLS);
+	sreg_strobe();
 	flip_to_0();
 	flip_to_1();
 }
-
 
 void
 flipdot_display_row_diff(uint8_t *rows, uint8_t *cols_to_0, uint8_t *cols_to_1)
 {
-	sreg_fill2(rows, REGISTER_ROWS, cols_to_0, REGISTER_COLS);
-	strobe();
+	sreg_fill_both(rows, REGISTER_ROWS, cols_to_0, REGISTER_COLS);
+	sreg_strobe();
 	flip_to_0();
 
-	sreg_fill(COL, cols_to_1, REGISTER_COLS);
-	strobe();
+	sreg_fill_col(cols_to_1, REGISTER_COLS);
+	sreg_strobe();
 	flip_to_1();
 }
-
 
 void
 flipdot_display_frame(uint8_t *frame)
@@ -228,6 +199,15 @@ flipdot_display_frame(uint8_t *frame)
 
 		flipdot_display_row(rows, cols);
 	}
+}
+
+void
+flipdot_display_bitmap(uint8_t *bitmap)
+{
+	uint8_t frame[FRAME_BYTE_COUNT];
+
+	flipdot_bitmap_to_frame(bitmap, frame);
+	flipdot_display_frame(frame);
 }
 
 void
@@ -273,6 +253,15 @@ flipdot_update_frame(uint8_t *frame)
 	}
 }
 
+void
+flipdot_update_bitmap(uint8_t *bitmap)
+{
+	uint8_t frame[FRAME_BYTE_COUNT];
+
+	flipdot_bitmap_to_frame(bitmap, frame);
+	flipdot_update_frame(frame);
+}
+
 // Slow bit copy
 void
 flipdot_bitmap_to_frame(uint8_t *bitmap, uint8_t *frame)
@@ -298,60 +287,78 @@ flipdot_frame_to_bitmap(uint8_t *frame, uint8_t *bitmap)
 	}
 }
 
-void
-flipdot_display_bitmap(uint8_t *bitmap)
+
+static void
+flip_to_0(void)
 {
-	uint8_t frame[FRAME_BYTE_COUNT];
+	_hw_clr(OE1);
 
-	flipdot_bitmap_to_frame(bitmap, frame);
-	flipdot_display_frame(frame);
-}
+	_nanosleep(OE_DELAY);
 
+	_hw_set(OE0);
 
-void
-flipdot_update_bitmap(uint8_t *bitmap)
-{
-	uint8_t frame[FRAME_BYTE_COUNT];
+	_nanosleep(FLIP_DELAY);
 
-	flipdot_bitmap_to_frame(bitmap, frame);
-	flipdot_update_frame(frame);
+	_hw_clr(OE0);
 }
 
 static void
-sreg_push_bit(enum sreg reg, uint_fast8_t bit)
+flip_to_1(void)
 {
-	if (bit) {
-		_hw_set(DATA(reg));
-	} else {
-		_hw_clr(DATA(reg));
+	_hw_clr(OE0);
+
+	_nanosleep(OE_DELAY);
+
+	_hw_set(OE1);
+
+	_nanosleep(FLIP_DELAY);
+
+	_hw_clr(OE1);
+}
+
+
+static void
+sreg_strobe(void)
+{
+	_hw_set(STROBE);
+
+#ifndef NOSLEEP
+	_nanosleep(STROBE_DELAY);
+#endif
+
+	_hw_clr(STROBE);
+}
+
+static void
+sreg_fill_col(uint8_t *col_data, uint_fast16_t col_count)
+{
+	while (col_count--) {
+		if (ISBITSET(col_data, col_count)) {
+			_hw_set(DATA_COL);
+		} else {
+			_hw_clr(DATA_COL);
+		}
+
+#ifndef NOSLEEP
+		_nanosleep(DATA_DELAY);
+#endif
+
+		_hw_set(CLK_COL);
+
+#ifndef NOSLEEP
+		_nanosleep(CLK_DELAY);
+#endif
+
+		_hw_clr(CLK_COL);
+
+#ifndef NOSLEEP
+//		_nanosleep(CLK_DELAY);
+#endif
 	}
-#ifndef NOSLEEP
-	_nanosleep(DATA_DELAY);
-#endif
-
-	_hw_set(CLK(reg));
-
-#ifndef NOSLEEP
-	_nanosleep(CLK_DELAY);
-#endif
-
-	_hw_clr(CLK(reg));
-
-#ifndef NOSLEEP
-	//_nanosleep(CLK_DELAY);
-#endif
 }
 
 static void
-sreg_fill(enum sreg reg, uint8_t *data, uint_fast16_t count)
-{
-	while (count--) {
-		sreg_push_bit(reg, ISBITSET(data, count));
-	}
-}
-
-static void
-sreg_fill2(uint8_t *row_data, uint_fast16_t row_count, uint8_t *col_data, uint_fast16_t col_count)
+sreg_fill_both(uint8_t *row_data, uint_fast16_t row_count, uint8_t *col_data, uint_fast16_t col_count)
 {
 	while (row_count || col_count) {
 
@@ -417,44 +424,4 @@ sreg_fill2(uint8_t *row_data, uint_fast16_t row_count, uint8_t *col_data, uint_f
 			col_count--;
 		}
 	}
-}
-
-static void
-strobe(void)
-{
-	_hw_set(STROBE);
-
-#ifndef NOSLEEP
-	_nanosleep(STROBE_DELAY);
-#endif
-
-	_hw_clr(STROBE);
-}
-
-static void
-flip_to_0(void)
-{
-	_hw_clr(OE1);
-
-	_nanosleep(OE_DELAY);
-
-	_hw_set(OE0);
-
-	_nanosleep(FLIP_DELAY);
-
-	_hw_clr(OE0);
-}
-
-static void
-flip_to_1(void)
-{
-	_hw_clr(OE0);
-
-	_nanosleep(OE_DELAY);
-
-	_hw_set(OE1);
-
-	_nanosleep(FLIP_DELAY);
-
-	_hw_clr(OE1);
 }
