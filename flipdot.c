@@ -363,23 +363,23 @@ sreg_fill_both(uint8_t *row_data, uint_fast16_t row_count, uint8_t *col_data, ui
 	while (row_count || col_count) {
 
 #ifdef GPIO_MULTI
-		_hw_clr_multi(_BV(DATA(ROW)) | _BV(DATA(COL)));
-		_hw_set_multi( ((row_count && ISBITSET(row_data, row_count - 1))?(_BV(DATA(ROW))):(0)) |
-						((col_count && ISBITSET(col_data, col_count - 1))?(_BV(DATA(COL))):(0)));
+		_hw_clr_multi(_BV(ROW_DATA) | _BV(COL_DATA));
+		_hw_set_multi( ((row_count && ISBITSET(row_data, row_count - 1))?(_BV(ROW_DATA)):(0)) |
+						((col_count && ISBITSET(col_data, col_count - 1))?(_BV(COL_DATA)):(0)));
 #else
 		if (row_count) {
 			if (ISBITSET(row_data, row_count - 1)) {
-				_hw_set(DATA(ROW));
+				_hw_set(ROW_DATA);
 			} else {
-				_hw_clr(DATA(ROW));
+				_hw_clr(ROW_DATA);
 			}
 		}
 
 		if (col_count) {
 			if (ISBITSET(col_data, col_count - 1)) {
-				_hw_set(DATA(COL));
+				_hw_set(COL_DATA);
 			} else {
-				_hw_clr(DATA(COL));
+				_hw_clr(COL_DATA);
 			}
 		}
 #endif
@@ -389,14 +389,14 @@ sreg_fill_both(uint8_t *row_data, uint_fast16_t row_count, uint8_t *col_data, ui
 #endif
 
 #ifdef GPIO_MULTI
-		_hw_set_multi( ((row_count)?(_BV(CLK(ROW))):(0)) | ((col_count)?(_BV(CLK(COL))):(0)));
+		_hw_set_multi( ((row_count)?(_BV(ROW_CLK)):(0)) | ((col_count)?(_BV(COL_CLK)):(0)));
 #else
 		if (row_count) {
-			_hw_set(CLK(ROW));
+			_hw_set(ROW_CLK);
 		}
 
 		if (col_count) {
-			_hw_set(CLK(COL));
+			_hw_set(COL_CLK);
 		}
 #endif
 
@@ -405,14 +405,14 @@ sreg_fill_both(uint8_t *row_data, uint_fast16_t row_count, uint8_t *col_data, ui
 #endif
 
 #ifdef GPIO_MULTI
-		_hw_clr_multi( ((row_count)?(_BV(CLK(ROW))):(0)) | ((col_count)?(_BV(CLK(COL))):(0)));
+		_hw_clr_multi( ((row_count)?(_BV(ROW_CLK)):(0)) | ((col_count)?(_BV(COL_CLK)):(0)));
 #else
 		if (row_count) {
-			_hw_clr(CLK(ROW));
+			_hw_clr(ROW_CLK);
 		}
 
 		if (col_count) {
-			_hw_clr(CLK(COL));
+			_hw_clr(COL_CLK);
 		}
 #endif
 
