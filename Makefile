@@ -18,7 +18,7 @@ flipdot.o: flipdot.c flipdot.h
 $(EXECUTABLES): % : %.o flipdot.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-%.d: %.c
+%.dep: %.c
 	$(CC) $(CPPFLAGS) -MM -MT $(<:.c=.o) -MP -MF $@ $<
 
--include $(SOURCES:.c=.d)
+-include $(SOURCES:.c=.dep)
