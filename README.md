@@ -9,3 +9,4 @@ Flip Dot Display driver for Raspberry Pi
 * `make`
 * `sudo ./examples/fliptest`
 * `sudo ./examples/flipclear`
+* `echo 'Hello World!' |toilet -f 3x5 |sudo ./examples/flip_pipe`
