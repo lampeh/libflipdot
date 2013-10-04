@@ -55,15 +55,13 @@ static void flip_to_1(void);
 static inline void
 _hw_init(void)
 {
-	/* init ports */
-	bcm2835_gpio_clr(OE0);
-	bcm2835_gpio_clr(OE1);
-	bcm2835_gpio_clr(STROBE);
-	bcm2835_gpio_clr(DATA_ROW);
-	bcm2835_gpio_clr(CLK_ROW);
-	bcm2835_gpio_clr(DATA_COL);
-	bcm2835_gpio_clr(CLK_COL);
+	// clear ports
+	bcm2835_gpio_clr_multi(
+		_BV(OE0) | _BV(OE1) | _BV(STROBE) |
+		_BV(DATA_ROW) | _BV(CLK_ROW) |
+		_BV(DATA_COL) | _BV(CLK_COL));
 
+	// set ports to output
 	bcm2835_gpio_fsel(OE0, BCM2835_GPIO_FSEL_OUTP);
 	bcm2835_gpio_fsel(OE1, BCM2835_GPIO_FSEL_OUTP);
 	bcm2835_gpio_fsel(STROBE, BCM2835_GPIO_FSEL_OUTP);
@@ -76,16 +74,14 @@ _hw_init(void)
 static inline void
 _hw_shutdown(void)
 {
-	// TODO: disable pud?
+	// clear ports
+	bcm2835_gpio_clr_multi(
+		_BV(OE0) | _BV(OE1) | _BV(STROBE) |
+		_BV(DATA_ROW) | _BV(CLK_ROW) |
+		_BV(DATA_COL) | _BV(CLK_COL));
 
-	bcm2835_gpio_clr(OE0);
-	bcm2835_gpio_clr(OE1);
-	bcm2835_gpio_clr(STROBE);
-	bcm2835_gpio_clr(DATA_ROW);
-	bcm2835_gpio_clr(CLK_ROW);
-	bcm2835_gpio_clr(DATA_COL);
-	bcm2835_gpio_clr(CLK_COL);
-
+	// set ports to input
+	// TODO: disable pull-ups?
 	bcm2835_gpio_fsel(OE0, BCM2835_GPIO_FSEL_INPT);
 	bcm2835_gpio_fsel(OE1, BCM2835_GPIO_FSEL_INPT);
 	bcm2835_gpio_fsel(STROBE, BCM2835_GPIO_FSEL_INPT);
@@ -96,15 +92,27 @@ _hw_shutdown(void)
 }
 
 static inline void
-_hw_set(uint_fast8_t gpio)
+_hw_set(uint8_t gpio)
 {
 	bcm2835_gpio_set(gpio);
 }
 
 static inline void
-_hw_clr(uint_fast8_t gpio)
+_hw_set_multi(uint32_t mask)
+{
+	bcm2835_gpio_set_multi(mask);
+}
+
+static inline void
+_hw_clr(uint8_t gpio)
 {
 	bcm2835_gpio_clr(gpio);
+}
+
+static inline void
+_hw_clr_multi(uint32_t mask)
+{
+	bcm2835_gpio_clr_multi(mask);
 }
 
 static inline void
@@ -330,45 +338,22 @@ static void
 sreg_fill2(uint8_t *row_data, uint_fast16_t row_count, uint8_t *col_data, uint_fast16_t col_count)
 {
 	while (row_count || col_count) {
-		if (row_count) {
-			if (ISBITSET(row_data, row_count - 1)) {
-				_hw_set(DATA(ROW));
-			} else {
-				_hw_clr(DATA(ROW));
-			}
-		}
 
-		if (col_count) {
-			if (ISBITSET(col_data, col_count - 1)) {
-				_hw_set(DATA(COL));
-			} else {
-				_hw_clr(DATA(COL));
-			}
-		}
+		_hw_clear_multi(_BV(DATA(ROW)) | _BV(DATA(COL)));
+		_hw_set_multi( ((row_count && ISBITSET(row_data, row_count - 1))?(_BV(DATA(ROW))):(0)) |
+						((col_count && ISBITSET(col_data, col_count - 1))?(_BV(DATA(COL))):(0)));
 
 #ifndef NOSLEEP
 		_nanosleep(DATA_DELAY);
 #endif
 
-		if (row_count) {
-			_hw_set(CLK(ROW));
-		}
-
-		if (col_count) {
-			_hw_set(CLK(COL));
-		}
+		_hw_set_multi( ((row_count)?(_BV(CLK(ROW))):(0)) | ((col_count)?(_BV(CLK(COL))):(0)));
 
 #ifndef NOSLEEP
 		_nanosleep(CLK_DELAY);
 #endif
 
-		if (row_count) {
-			_hw_clr(CLK(ROW));
-		}
-
-		if (col_count) {
-			_hw_clr(CLK(COL));
-		}
+		_hw_clr_multi( ((row_count)?(_BV(CLK(ROW))):(0)) | ((col_count)?(_BV(CLK(COL))):(0)));
 
 		if (row_count) {
 			row_count--;
