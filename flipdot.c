@@ -32,26 +32,26 @@ _hw_init(void)
 #ifdef GPIO_MULTI
 	bcm2835_gpio_clr_multi(
 		_BV(OE0) | _BV(OE1) | _BV(STROBE) |
-		_BV(DATA_ROW) | _BV(CLK_ROW) |
-		_BV(DATA_COL) | _BV(CLK_COL));
+		_BV(ROW_DATA) | _BV(ROW_CLK) |
+		_BV(COL_DATA) | _BV(COL_CLK));
 #else
 	bcm2835_gpio_clr(OE0);
 	bcm2835_gpio_clr(OE1);
 	bcm2835_gpio_clr(STROBE);
-	bcm2835_gpio_clr(DATA_ROW);
-	bcm2835_gpio_clr(CLK_ROW);
-	bcm2835_gpio_clr(DATA_COL);
-	bcm2835_gpio_clr(CLK_COL);
+	bcm2835_gpio_clr(ROW_DATA);
+	bcm2835_gpio_clr(ROW_CLK);
+	bcm2835_gpio_clr(COL_DATA);
+	bcm2835_gpio_clr(COL_CLK);
 #endif
 
 	// set ports to output
 	bcm2835_gpio_fsel(OE0, BCM2835_GPIO_FSEL_OUTP);
 	bcm2835_gpio_fsel(OE1, BCM2835_GPIO_FSEL_OUTP);
 	bcm2835_gpio_fsel(STROBE, BCM2835_GPIO_FSEL_OUTP);
-	bcm2835_gpio_fsel(DATA_ROW, BCM2835_GPIO_FSEL_OUTP);
-	bcm2835_gpio_fsel(CLK_ROW, BCM2835_GPIO_FSEL_OUTP);
-	bcm2835_gpio_fsel(DATA_COL, BCM2835_GPIO_FSEL_OUTP);
-	bcm2835_gpio_fsel(CLK_COL, BCM2835_GPIO_FSEL_OUTP);
+	bcm2835_gpio_fsel(ROW_DATA, BCM2835_GPIO_FSEL_OUTP);
+	bcm2835_gpio_fsel(ROW_CLK, BCM2835_GPIO_FSEL_OUTP);
+	bcm2835_gpio_fsel(COL_DATA, BCM2835_GPIO_FSEL_OUTP);
+	bcm2835_gpio_fsel(COL_CLK, BCM2835_GPIO_FSEL_OUTP);
 }
 
 static inline void
@@ -61,16 +61,16 @@ _hw_shutdown(void)
 #ifdef GPIO_MULTI
 	bcm2835_gpio_clr_multi(
 		_BV(OE0) | _BV(OE1) | _BV(STROBE) |
-		_BV(DATA_ROW) | _BV(CLK_ROW) |
-		_BV(DATA_COL) | _BV(CLK_COL));
+		_BV(ROW_DATA) | _BV(ROW_CLK) |
+		_BV(COL_DATA) | _BV(COL_CLK));
 #else
 	bcm2835_gpio_clr(OE0);
 	bcm2835_gpio_clr(OE1);
 	bcm2835_gpio_clr(STROBE);
-	bcm2835_gpio_clr(DATA_ROW);
-	bcm2835_gpio_clr(CLK_ROW);
-	bcm2835_gpio_clr(DATA_COL);
-	bcm2835_gpio_clr(CLK_COL);
+	bcm2835_gpio_clr(ROW_DATA);
+	bcm2835_gpio_clr(ROW_CLK);
+	bcm2835_gpio_clr(COL_DATA);
+	bcm2835_gpio_clr(COL_CLK);
 #endif
 
 	// set ports to input
@@ -78,10 +78,10 @@ _hw_shutdown(void)
 	bcm2835_gpio_fsel(OE0, BCM2835_GPIO_FSEL_INPT);
 	bcm2835_gpio_fsel(OE1, BCM2835_GPIO_FSEL_INPT);
 	bcm2835_gpio_fsel(STROBE, BCM2835_GPIO_FSEL_INPT);
-	bcm2835_gpio_fsel(DATA_ROW, BCM2835_GPIO_FSEL_INPT);
-	bcm2835_gpio_fsel(CLK_ROW, BCM2835_GPIO_FSEL_INPT);
-	bcm2835_gpio_fsel(DATA_COL, BCM2835_GPIO_FSEL_INPT);
-	bcm2835_gpio_fsel(CLK_COL, BCM2835_GPIO_FSEL_INPT);
+	bcm2835_gpio_fsel(ROW_DATA, BCM2835_GPIO_FSEL_INPT);
+	bcm2835_gpio_fsel(ROW_CLK, BCM2835_GPIO_FSEL_INPT);
+	bcm2835_gpio_fsel(COL_DATA, BCM2835_GPIO_FSEL_INPT);
+	bcm2835_gpio_fsel(COL_CLK, BCM2835_GPIO_FSEL_INPT);
 }
 
 static inline void
@@ -334,22 +334,22 @@ sreg_fill_col(uint8_t *col_data, uint_fast16_t col_count)
 {
 	while (col_count--) {
 		if (ISBITSET(col_data, col_count)) {
-			_hw_set(DATA_COL);
+			_hw_set(COL_DATA);
 		} else {
-			_hw_clr(DATA_COL);
+			_hw_clr(COL_DATA);
 		}
 
 #ifndef NOSLEEP
 		_nanosleep(DATA_DELAY);
 #endif
 
-		_hw_set(CLK_COL);
+		_hw_set(COL_CLK);
 
 #ifndef NOSLEEP
 		_nanosleep(CLK_DELAY);
 #endif
 
-		_hw_clr(CLK_COL);
+		_hw_clr(COL_CLK);
 
 #ifndef NOSLEEP
 //		_nanosleep(CLK_DELAY);
