@@ -15,7 +15,7 @@
 
 
 static uint8_t frames[FRAME_BYTE_COUNT][2];
-static uint8_t *frame_new, *frame_old;
+static uint8_t *frame_old, *frame_new;
 
 
 static inline void
@@ -224,6 +224,7 @@ sreg_fill_both(uint8_t *row_data, uint_fast16_t row_count, uint8_t *col_data, ui
 }
 
 
+// TODO: protect OE pulse against long delay
 static inline void
 flip_to_0(void)
 {
@@ -316,16 +317,16 @@ flipdot_display_row_diff(uint8_t *rows, uint8_t *cols_to_0, uint8_t *cols_to_1)
 void
 flipdot_display_frame(uint8_t *frame)
 {
-	uint8_t rows[REGISTER_ROWS];
-	uint8_t cols[REGISTER_COLS];
+	uint8_t rows[REGISTER_ROW_BYTE_COUNT];
+	uint8_t cols[REGISTER_COL_BYTE_COUNT];
 	uint8_t *frameptr;
 
 	memcpy(frame_new, frame, FRAME_BYTE_COUNT);
 	frameptr = (uint8_t *)frame_new;
 
 	for (uint_fast16_t row = 0; row < REGISTER_ROWS; row++) {
-		memcpy(cols, frameptr, REGISTER_COL_BYTE_COUNT);
-		frameptr += REGISTER_COL_BYTE_COUNT;
+		memcpy(cols, frameptr, sizeof(cols));
+		frameptr += sizeof(cols);
 
 		memset(rows, 0, sizeof(rows));
 		SETBIT(rows, row);
@@ -346,11 +347,11 @@ flipdot_display_bitmap(uint8_t *bitmap)
 void
 flipdot_update_frame(uint8_t *frame)
 {
-	uint8_t rows[REGISTER_ROWS];
-	uint8_t cols_to_0[REGISTER_COLS];
-	uint8_t cols_to_1[REGISTER_COLS];
-	uint8_t *frameptr_new;
+	uint8_t rows[REGISTER_ROW_BYTE_COUNT];
+	uint8_t cols_to_0[REGISTER_COL_BYTE_COUNT];
+	uint8_t cols_to_1[REGISTER_COL_BYTE_COUNT];
 	uint8_t *frameptr_old;
+	uint8_t *frameptr_new;
 	uint_fast8_t row_changed;
 
 	uint8_t *tmp = frame_old;
@@ -359,8 +360,8 @@ flipdot_update_frame(uint8_t *frame)
 
 	memcpy(frame_new, frame, FRAME_BYTE_COUNT);
 
-	frameptr_new = (uint8_t *)frame_new;
 	frameptr_old = (uint8_t *)frame_old;
+	frameptr_new = (uint8_t *)frame_new;
 
 	for (uint_fast16_t row = 0; row < REGISTER_ROWS; row++) {
 		row_changed = 0;
