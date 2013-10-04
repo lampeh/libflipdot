@@ -13,7 +13,7 @@ clean:
 	-rm $(EXECUTABLES) $(OBJECTS) flipdot.o
 
 flipdot.o: flipdot.c flipdot.h
-	$(CC) $(CFLAGS) -c -DNOSLEEP flipdot.c -o flipdot.o
+	$(CC) $(CFLAGS) -c -DNOSLEEP -DGPIO_MULTI flipdot.c -o flipdot.o
 
 $(EXECUTABLES): % : %.o flipdot.o
 	$(CC) -o $@ $^ $(LDFLAGS)
