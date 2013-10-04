@@ -18,11 +18,16 @@ static uint8_t frames[FRAME_BYTE_COUNT][2];
 static uint8_t *frame_new, *frame_old;
 
 
-static void sreg_fill_col(uint8_t *col_data, uint_fast16_t col_count);
-static void sreg_fill_both(uint8_t *row_data, uint_fast16_t row_count, uint8_t *col_data, uint_fast16_t col_count);
-static void sreg_strobe(void);
-static void flip_to_0(void);
-static void flip_to_1(void);
+static inline void
+_nanosleep(long nsec)
+{
+	struct timespec req;
+
+	req.tv_sec = 0;
+	req.tv_nsec = nsec;
+
+	while (nanosleep(&req, &req) == -1 && errno == EINTR);
+}
 
 
 static inline void
@@ -108,15 +113,143 @@ _hw_clr_multi(uint32_t mask)
 	bcm2835_gpio_clr_multi(mask);
 }
 
+
 static inline void
-_nanosleep(long nsec)
+sreg_strobe(void)
 {
-	struct timespec req;
+	_hw_set(STROBE);
 
-	req.tv_sec = 0;
-	req.tv_nsec = nsec;
+#ifndef NOSLEEP
+	_nanosleep(STROBE_DELAY);
+#endif
 
-	while (nanosleep(&req, &req) == -1 && errno == EINTR);
+	_hw_clr(STROBE);
+}
+
+static void
+sreg_fill_col(uint8_t *col_data, uint_fast16_t col_count)
+{
+	while (col_count--) {
+		if (ISBITSET(col_data, col_count)) {
+			_hw_set(COL_DATA);
+		} else {
+			_hw_clr(COL_DATA);
+		}
+
+#ifndef NOSLEEP
+		_nanosleep(DATA_DELAY);
+#endif
+
+		_hw_set(COL_CLK);
+
+#ifndef NOSLEEP
+		_nanosleep(CLK_DELAY);
+#endif
+
+		_hw_clr(COL_CLK);
+
+#ifndef NOSLEEP
+//		_nanosleep(CLK_DELAY);
+#endif
+	}
+}
+
+static void
+sreg_fill_both(uint8_t *row_data, uint_fast16_t row_count, uint8_t *col_data, uint_fast16_t col_count)
+{
+	while (row_count || col_count) {
+
+#ifdef GPIO_MULTI
+		_hw_clr_multi(_BV(ROW_DATA) | _BV(COL_DATA));
+		_hw_set_multi( ((row_count && ISBITSET(row_data, row_count - 1))?(_BV(ROW_DATA)):(0)) |
+						((col_count && ISBITSET(col_data, col_count - 1))?(_BV(COL_DATA)):(0)));
+#else
+		if (row_count) {
+			if (ISBITSET(row_data, row_count - 1)) {
+				_hw_set(ROW_DATA);
+			} else {
+				_hw_clr(ROW_DATA);
+			}
+		}
+
+		if (col_count) {
+			if (ISBITSET(col_data, col_count - 1)) {
+				_hw_set(COL_DATA);
+			} else {
+				_hw_clr(COL_DATA);
+			}
+		}
+#endif
+
+#ifndef NOSLEEP
+		_nanosleep(DATA_DELAY);
+#endif
+
+#ifdef GPIO_MULTI
+		_hw_set_multi( ((row_count)?(_BV(ROW_CLK)):(0)) | ((col_count)?(_BV(COL_CLK)):(0)));
+#else
+		if (row_count) {
+			_hw_set(ROW_CLK);
+		}
+
+		if (col_count) {
+			_hw_set(COL_CLK);
+		}
+#endif
+
+#ifndef NOSLEEP
+		_nanosleep(CLK_DELAY);
+#endif
+
+#ifdef GPIO_MULTI
+		_hw_clr_multi( ((row_count)?(_BV(ROW_CLK)):(0)) | ((col_count)?(_BV(COL_CLK)):(0)));
+#else
+		if (row_count) {
+			_hw_clr(ROW_CLK);
+		}
+
+		if (col_count) {
+			_hw_clr(COL_CLK);
+		}
+#endif
+
+		if (row_count) {
+			row_count--;
+		}
+
+		if (col_count) {
+			col_count--;
+		}
+	}
+}
+
+
+static inline void
+flip_to_0(void)
+{
+	_hw_clr(OE1);
+
+	_nanosleep(OE_DELAY);
+
+	_hw_set(OE0);
+
+	_nanosleep(FLIP_DELAY);
+
+	_hw_clr(OE0);
+}
+
+static inline void
+flip_to_1(void)
+{
+	_hw_clr(OE0);
+
+	_nanosleep(OE_DELAY);
+
+	_hw_set(OE1);
+
+	_nanosleep(FLIP_DELAY);
+
+	_hw_clr(OE1);
 }
 
 
@@ -283,145 +416,6 @@ flipdot_frame_to_bitmap(uint8_t *frame, uint8_t *bitmap)
 	for (uint_fast16_t i = 0; i < DISP_PIXEL_COUNT; i++) {
 		if (ISBITSET((uint8_t *)frame, i + ((i / MODULE_COLS) * COL_GAP))) {
 			SETBIT((uint8_t *)bitmap, i);
-		}
-	}
-}
-
-
-static void
-flip_to_0(void)
-{
-	_hw_clr(OE1);
-
-	_nanosleep(OE_DELAY);
-
-	_hw_set(OE0);
-
-	_nanosleep(FLIP_DELAY);
-
-	_hw_clr(OE0);
-}
-
-static void
-flip_to_1(void)
-{
-	_hw_clr(OE0);
-
-	_nanosleep(OE_DELAY);
-
-	_hw_set(OE1);
-
-	_nanosleep(FLIP_DELAY);
-
-	_hw_clr(OE1);
-}
-
-
-static void
-sreg_strobe(void)
-{
-	_hw_set(STROBE);
-
-#ifndef NOSLEEP
-	_nanosleep(STROBE_DELAY);
-#endif
-
-	_hw_clr(STROBE);
-}
-
-static void
-sreg_fill_col(uint8_t *col_data, uint_fast16_t col_count)
-{
-	while (col_count--) {
-		if (ISBITSET(col_data, col_count)) {
-			_hw_set(COL_DATA);
-		} else {
-			_hw_clr(COL_DATA);
-		}
-
-#ifndef NOSLEEP
-		_nanosleep(DATA_DELAY);
-#endif
-
-		_hw_set(COL_CLK);
-
-#ifndef NOSLEEP
-		_nanosleep(CLK_DELAY);
-#endif
-
-		_hw_clr(COL_CLK);
-
-#ifndef NOSLEEP
-//		_nanosleep(CLK_DELAY);
-#endif
-	}
-}
-
-static void
-sreg_fill_both(uint8_t *row_data, uint_fast16_t row_count, uint8_t *col_data, uint_fast16_t col_count)
-{
-	while (row_count || col_count) {
-
-#ifdef GPIO_MULTI
-		_hw_clr_multi(_BV(ROW_DATA) | _BV(COL_DATA));
-		_hw_set_multi( ((row_count && ISBITSET(row_data, row_count - 1))?(_BV(ROW_DATA)):(0)) |
-						((col_count && ISBITSET(col_data, col_count - 1))?(_BV(COL_DATA)):(0)));
-#else
-		if (row_count) {
-			if (ISBITSET(row_data, row_count - 1)) {
-				_hw_set(ROW_DATA);
-			} else {
-				_hw_clr(ROW_DATA);
-			}
-		}
-
-		if (col_count) {
-			if (ISBITSET(col_data, col_count - 1)) {
-				_hw_set(COL_DATA);
-			} else {
-				_hw_clr(COL_DATA);
-			}
-		}
-#endif
-
-#ifndef NOSLEEP
-		_nanosleep(DATA_DELAY);
-#endif
-
-#ifdef GPIO_MULTI
-		_hw_set_multi( ((row_count)?(_BV(ROW_CLK)):(0)) | ((col_count)?(_BV(COL_CLK)):(0)));
-#else
-		if (row_count) {
-			_hw_set(ROW_CLK);
-		}
-
-		if (col_count) {
-			_hw_set(COL_CLK);
-		}
-#endif
-
-#ifndef NOSLEEP
-		_nanosleep(CLK_DELAY);
-#endif
-
-#ifdef GPIO_MULTI
-		_hw_clr_multi( ((row_count)?(_BV(ROW_CLK)):(0)) | ((col_count)?(_BV(COL_CLK)):(0)));
-#else
-		if (row_count) {
-			_hw_clr(ROW_CLK);
-		}
-
-		if (col_count) {
-			_hw_clr(COL_CLK);
-		}
-#endif
-
-		if (row_count) {
-			row_count--;
-		}
-
-		if (col_count) {
-			col_count--;
 		}
 	}
 }
