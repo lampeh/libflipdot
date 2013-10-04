@@ -169,8 +169,6 @@ flipdot_clear(void)
 void
 flipdot_display_row(uint8_t *rows, uint8_t *cols)
 {
-//	sreg_fill(ROW, rows, REGISTER_ROWS);
-//	sreg_fill(COL, cols, REGISTER_COLS);
 	sreg_fill2(rows, REGISTER_ROWS, cols, REGISTER_COLS);
 	strobe();
 	flip_to_0();
@@ -181,8 +179,6 @@ flipdot_display_row(uint8_t *rows, uint8_t *cols)
 void
 flipdot_display_row_diff(uint8_t *rows, uint8_t *cols_to_0, uint8_t *cols_to_1)
 {
-//	sreg_fill(ROW, rows, REGISTER_ROWS);
-//	sreg_fill(COL, cols_to_0, REGISTER_COLS);
 	sreg_fill2(rows, REGISTER_ROWS, cols_to_0, REGISTER_COLS);
 	strobe();
 	flip_to_0();
