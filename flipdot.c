@@ -56,10 +56,20 @@ static inline void
 _hw_init(void)
 {
 	// clear ports
+#ifdef GPIO_MULTI
 	bcm2835_gpio_clr_multi(
 		_BV(OE0) | _BV(OE1) | _BV(STROBE) |
 		_BV(DATA_ROW) | _BV(CLK_ROW) |
 		_BV(DATA_COL) | _BV(CLK_COL));
+#else
+	bcm2835_gpio_clr(OE0);
+	bcm2835_gpio_clr(OE1);
+	bcm2835_gpio_clr(STROBE);
+	bcm2835_gpio_clr(DATA_ROW);
+	bcm2835_gpio_clr(CLK_ROW);
+	bcm2835_gpio_clr(DATA_COL);
+	bcm2835_gpio_clr(CLK_COL);
+#endif
 
 	// set ports to output
 	bcm2835_gpio_fsel(OE0, BCM2835_GPIO_FSEL_OUTP);
@@ -75,10 +85,20 @@ static inline void
 _hw_shutdown(void)
 {
 	// clear ports
+#ifdef GPIO_MULTI
 	bcm2835_gpio_clr_multi(
 		_BV(OE0) | _BV(OE1) | _BV(STROBE) |
 		_BV(DATA_ROW) | _BV(CLK_ROW) |
 		_BV(DATA_COL) | _BV(CLK_COL));
+#else
+	bcm2835_gpio_clr(OE0);
+	bcm2835_gpio_clr(OE1);
+	bcm2835_gpio_clr(STROBE);
+	bcm2835_gpio_clr(DATA_ROW);
+	bcm2835_gpio_clr(CLK_ROW);
+	bcm2835_gpio_clr(DATA_COL);
+	bcm2835_gpio_clr(CLK_COL);
+#endif
 
 	// set ports to input
 	// TODO: disable pull-ups?
@@ -335,21 +355,59 @@ sreg_fill2(uint8_t *row_data, uint_fast16_t row_count, uint8_t *col_data, uint_f
 {
 	while (row_count || col_count) {
 
+#ifdef GPIO_MULTI
 		_hw_clr_multi(_BV(DATA(ROW)) | _BV(DATA(COL)));
 		_hw_set_multi( ((row_count && ISBITSET(row_data, row_count - 1))?(_BV(DATA(ROW))):(0)) |
 						((col_count && ISBITSET(col_data, col_count - 1))?(_BV(DATA(COL))):(0)));
+#else
+		if (row_count) {
+			if (ISBITSET(row_data, row_count - 1)) {
+				_hw_set(DATA(ROW));
+			} else {
+				_hw_clr(DATA(ROW));
+			}
+		}
+
+		if (col_count) {
+			if (ISBITSET(col_data, col_count - 1)) {
+				_hw_set(DATA(COL));
+			} else {
+				_hw_clr(DATA(COL));
+			}
+		}
+#endif
 
 #ifndef NOSLEEP
 		_nanosleep(DATA_DELAY);
 #endif
 
+#ifdef GPIO_MULTI
 		_hw_set_multi( ((row_count)?(_BV(CLK(ROW))):(0)) | ((col_count)?(_BV(CLK(COL))):(0)));
+#else
+		if (row_count) {
+			_hw_set(CLK(ROW));
+		}
+
+		if (col_count) {
+			_hw_set(CLK(COL));
+		}
+#endif
 
 #ifndef NOSLEEP
 		_nanosleep(CLK_DELAY);
 #endif
 
+#ifdef GPIO_MULTI
 		_hw_clr_multi( ((row_count)?(_BV(CLK(ROW))):(0)) | ((col_count)?(_BV(CLK(COL))):(0)));
+#else
+		if (row_count) {
+			_hw_clr(CLK(ROW));
+		}
+
+		if (col_count) {
+			_hw_clr(CLK(COL));
+		}
+#endif
 
 		if (row_count) {
 			row_count--;
