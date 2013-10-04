@@ -17,6 +17,10 @@ int main(void) {
 	if (!bcm2835_init())
 		return 1;
 
+	// shut down GPIOs on exit
+	signal(SIGINT, flipdot_shutdown);
+	signal(SIGTERM, flipdot_shutdown);
+
 #if 1
 	puts("flipdot_init()");
 	flipdot_init();
