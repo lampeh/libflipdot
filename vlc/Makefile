@@ -40,7 +40,7 @@ mostlyclean: clean
 
 SOURCES = flipdot_plugin.c
 
-$(SOURCES:%.c=src/%.o): %: ../flipdot.h
+$(SOURCES:%.c=src/%.o): %: ../flipdot.h ../libflipdot.a
 
 libflipdot_plugin.so: $(SOURCES:%.c=src/%.o)
 	$(CC) -shared -o $@ $^ $(LDFLAGS)
