@@ -3,9 +3,9 @@ LD = ld
 CC = cc
 INSTALL = install
 CFLAGS = -g -Wextra -DNOSLEEP -O3 -flto -Wall -std=gnu99 -pedantic -funroll-loops -fno-common
-LDFLAGS = -flto -Wl,--relax,--gc-sections
+LDFLAGS = -flto -Wl,--relax,--gc-sections -L ..
 VLC_PLUGIN_CFLAGS := $(shell pkg-config --cflags vlc-plugin)
-VLC_PLUGIN_LIBS := $(shell pkg-config --libs vlc-plugin)
+VLC_PLUGIN_LIBS := $(shell pkg-config --libs vlc-plugin) -lflipdot
 
 libdir = $(PREFIX)/lib
 plugindir = $(libdir)/vlc/plugins
@@ -42,7 +42,7 @@ SOURCES = flipdot_plugin.c
 
 $(SOURCES:%.c=src/%.o): %: ../flipdot.h
 
-libflipdot_plugin.so: $(SOURCES:%.c=src/%.o) ../flipdot.o
+libflipdot_plugin.so: $(SOURCES:%.c=src/%.o)
 	$(CC) -shared -o $@ $^ $(LDFLAGS)
 
 .PHONY: all install install-strip uninstall clean mostlyclean
