@@ -259,8 +259,8 @@ flipdot_init(void)
 {
 	_hw_init();
 
-	memset(frames[0], 0x00, FRAME_BYTE_COUNT);
-	memset(frames[1], 0x00, FRAME_BYTE_COUNT);
+	memset(frames[0], 0x00, sizeof(frames[0]));
+	memset(frames[1], 0x00, sizeof(frames[1]));
 	frame_old = frames[0];
 	frame_new = frames[1];
 }
