@@ -18,6 +18,11 @@ Installation
 * `sudo ./examples/flipclear`
 * `echo 'Hello World!' |toilet -f 3x5 |sudo ./examples/flip_pipe`
 
+**Beware of signals!**  
+Terminating a program while one of the OE outputs is still set will
+keep the display transistors on and *may* cause damage to the matrix
+or the driver board.
+
 
 Examples
 --------
