@@ -82,8 +82,8 @@
 typedef uint8_t flipdot_frame_t[FRAME_BYTE_COUNT];
 typedef uint8_t flipdot_bitmap_t[DISP_BYTE_COUNT];
 
-typedef uint8_t flipdot_col_reg_t[(REGISTER_COLS + 7) / 8];
-typedef uint8_t flipdot_row_reg_t[(REGISTER_ROWS + 7) / 8];
+typedef uint8_t flipdot_col_reg_t[REGISTER_COL_BYTE_COUNT];
+typedef uint8_t flipdot_row_reg_t[REGISTER_ROW_BYTE_COUNT];
 
 
 void flipdot_init(void);
