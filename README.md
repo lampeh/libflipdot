@@ -21,7 +21,8 @@ Installation
 **Beware of signals!**  
 Terminating a program while one of the OE outputs is still set will
 keep the display transistors on and may cause damage to the matrix
-or the driver board.
+or the driver board. Call `flipdot_shutdown()` or run
+`sudo ./examples/flipoff` to turn the GPIO outputs off.
 
 
 Examples
