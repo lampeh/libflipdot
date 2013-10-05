@@ -9,10 +9,12 @@
 #include <bcm2835.h>
 #include "flipdot.h"
 
-#define BMP_SETBIT(b,x,y) b[((y*DISP_COLS)+x)>>3]|=(1<<(((y*DISP_COLS)+x)&7));
-#define BMP_CLEARBIT(b,x,y) b[((y*DISP_COLS)+x)>>3]&=(1<<(((y*DISP_COLS)+x)&7))^0xFF;
 
-uint8_t bmp[FRAME_BYTE_COUNT];
+#define BMP_SETBIT(b,x,y) ((uint8_t *)(b))[(((y)*DISP_COLS)+(x))>>3]|=(1<<((((y)*DISP_COLS)+(x))&7));
+#define BMP_CLEARBIT(b,x,y) ((uint8_t *)(b))[(((y)*DISP_COLS)+(x))>>3]&=(1<<((((y)*DISP_COLS)+(x))&7))^0xFF
+
+flipdot_bitmap_t bmp;
+
 
 int main(void) {
 	if (!bcm2835_init())
