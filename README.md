@@ -23,7 +23,7 @@ Examples
 --------
 
 `flip_pipe`: Reads an ASCII bitmap followed by an empty line (\\n\\n)
-from stdin and sends it to the display.  
+from stdin and sends it to the display. Loops until EOF.  
 Use this [3x5](http://www.figlet.org/fontdb_example.cgi?font=3x5.flf)
 figlet font to pipe text onto the display.
 
