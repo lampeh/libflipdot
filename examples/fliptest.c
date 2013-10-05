@@ -18,10 +18,6 @@ int main(void) {
 	if (!bcm2835_init())
 		return 1;
 
-	// shut down GPIOs on exit
-	signal(SIGINT, (__sighandler_t)flipdot_shutdown);
-	signal(SIGTERM, (__sighandler_t)flipdot_shutdown);
-
 #if 1
 	puts("flipdot_init()");
 	flipdot_init();
@@ -75,7 +71,7 @@ int main(void) {
 	printf("%d x %d\n", DISP_COLS, DISP_ROWS);
 	srandom(time(NULL));
 
-	for (int i = 0; i < (MODULE_COUNT_H * MODULE_COUNT_V * 3000); i++) {
+	for (int i = 0; i < (MODULE_COUNT_H * MODULE_COUNT_V * 1000); i++) {
 		BMP_SETBIT(bmp, random() % DISP_COLS, random() % DISP_ROWS);
 		BMP_CLEARBIT(bmp, random() % DISP_COLS, random() % DISP_ROWS);
 		flipdot_update_bitmap(bmp);

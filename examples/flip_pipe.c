@@ -53,5 +53,7 @@ int main(void) {
 			x++;
 		}
 	}
+
+	flipdot_shutdown();
 	return(0);
 }
