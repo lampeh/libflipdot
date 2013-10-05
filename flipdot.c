@@ -14,7 +14,7 @@
 #endif
 
 
-static uint8_t frames[FRAME_BYTE_COUNT][2];
+static uint8_t frames[2][FRAME_BYTE_COUNT];
 static uint8_t *frame_old, *frame_new;
 
 
