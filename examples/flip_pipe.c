@@ -32,17 +32,21 @@ int main(void) {
 
 	while ((c = getc(stdin)) != EOF) {
 		if (c == '\n') {
-			if ((c = getc(stdin)) == '\n') {
+			if ((c = getc(stdin)) == '\n' || c == EOF) {
 				flipdot_update_bitmap(bmp);
+
 				memset(bmp, 0x00, sizeof(bmp));
 				x = 0;
 				y = 0;
-			} else if (c != EOF) {
-				ungetc(c, stdin);
-				x = 0;
-				y++;
+
+				if (c == EOF) {
+					break;
+				}
+				continue;
 			}
-			continue;
+
+			x = 0;
+			y++;
 		}
 
 		if (x < DISP_COLS && y < DISP_ROWS) {
