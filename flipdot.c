@@ -339,7 +339,7 @@ flipdot_display_bitmap(const uint8_t *bitmap)
 {
 	flipdot_frame_t frame;
 
-	flipdot_bitmap_to_frame(bitmap, frame);
+	flipdot_bitmap_to_frame(bitmap, &frame);
 	flipdot_display_frame(frame);
 }
 
@@ -391,31 +391,31 @@ flipdot_update_bitmap(const uint8_t *bitmap)
 {
 	flipdot_frame_t frame;
 
-	flipdot_bitmap_to_frame(bitmap, frame);
+	flipdot_bitmap_to_frame(bitmap, &frame);
 	flipdot_update_frame(frame);
 }
 
 // Slow bit copy
 void
-flipdot_bitmap_to_frame(const uint8_t *bitmap, uint8_t *frame)
+flipdot_bitmap_to_frame(const uint8_t *bitmap, flipdot_frame_t *frame)
 {
-	memset(frame, 0x00, FRAME_BYTE_COUNT);
+	memset(frame, 0x00, sizeof(*frame));
 
 	for (uint_fast16_t i = 0; i < DISP_PIXEL_COUNT; i++) {
 		if (ISBITSET(bitmap, i)) {
-			SETBIT(frame, i + ((i / MODULE_COLS) * COL_GAP));
+			SETBIT((uint8_t *)frame, i + ((i / MODULE_COLS) * COL_GAP));
 		}
 	}
 }
 
 void
-flipdot_frame_to_bitmap(const uint8_t *frame, uint8_t *bitmap)
+flipdot_frame_to_bitmap(const uint8_t *frame, flipdot_bitmap_t *bitmap)
 {
-	memset(bitmap, 0x00, DISP_BYTE_COUNT);
+	memset(bitmap, 0x00, sizeof(*bitmap));
 
 	for (uint_fast16_t i = 0; i < DISP_PIXEL_COUNT; i++) {
 		if (ISBITSET(frame, i + ((i / MODULE_COLS) * COL_GAP))) {
-			SETBIT(bitmap, i);
+			SETBIT((uint8_t *)bitmap, i);
 		}
 	}
 }

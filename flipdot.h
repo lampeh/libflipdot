@@ -104,8 +104,8 @@ void flipdot_display_bitmap(const uint8_t *bitmap);
 void flipdot_update_frame(const uint8_t *frame);
 void flipdot_update_bitmap(const uint8_t *bitmap);
 
-void flipdot_bitmap_to_frame(const uint8_t *bitmap, uint8_t *frame);
-void flipdot_frame_to_bitmap(const uint8_t *frame, uint8_t *bitmap);
+void flipdot_bitmap_to_frame(const uint8_t *bitmap, flipdot_frame_t *frame);
+void flipdot_frame_to_bitmap(const uint8_t *frame, flipdot_bitmap_t *bitmap);
 
 
 #endif /* FLIPDOT_H */
