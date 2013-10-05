@@ -23,12 +23,12 @@ Examples
 --------
 
 `flip_pipe`: Reads an ASCII bitmap followed by an empty line (\\n\\n)
-from stdin and sends it to the display. Loops until EOF.  
+from stdin and sends it to the display, loops until EOF.
 Use this [3x5](http://www.figlet.org/fontdb_example.cgi?font=3x5.flf)
 figlet font to pipe text onto the display.
 
 To use the library for your own code, copy flipdot.h and libflipdot.a
-where compiler and linker will find it. Link with `-lflipdot`.
+where compiler and linker will find it. Link with `-lflipdot`
 
 
 Functions
