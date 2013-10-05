@@ -6,6 +6,7 @@
 
 // BCM2835 GPIO pin mapping
 // see http://elinux.org/RPi_Low-level_peripherals
+// and https://wiki.attraktor.org/FlipdotDisplay#Daten
 
 #define ROW_DATA 11
 #define ROW_CLK 9
