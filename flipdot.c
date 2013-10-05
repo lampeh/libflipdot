@@ -18,7 +18,7 @@ static uint8_t frames[2][FRAME_BYTE_COUNT];
 static uint8_t *frame_old, *frame_new;
 
 
-static inline void
+static void
 _nanosleep(long nsec)
 {
 	struct timespec req;
@@ -30,7 +30,7 @@ _nanosleep(long nsec)
 }
 
 
-static inline void
+static void
 _hw_init(void)
 {
 	// clear ports
@@ -59,7 +59,7 @@ _hw_init(void)
 	bcm2835_gpio_fsel(COL_CLK, BCM2835_GPIO_FSEL_OUTP);
 }
 
-static inline void
+static void
 _hw_shutdown(void)
 {
 	// clear ports
@@ -89,32 +89,32 @@ _hw_shutdown(void)
 	bcm2835_gpio_fsel(COL_CLK, BCM2835_GPIO_FSEL_INPT);
 }
 
-static inline void
+static void
 _hw_set(uint8_t gpio)
 {
 	bcm2835_gpio_set(gpio);
 }
 
-static inline void
+static void
 _hw_set_multi(uint32_t mask)
 {
 	bcm2835_gpio_set_multi(mask);
 }
 
-static inline void
+static void
 _hw_clr(uint8_t gpio)
 {
 	bcm2835_gpio_clr(gpio);
 }
 
-static inline void
+static void
 _hw_clr_multi(uint32_t mask)
 {
 	bcm2835_gpio_clr_multi(mask);
 }
 
 
-static inline void
+static void
 sreg_strobe(void)
 {
 	_hw_set(STROBE);
@@ -225,7 +225,7 @@ sreg_fill_both(uint8_t *row_data, uint_fast16_t row_count, uint8_t *col_data, ui
 
 
 // TODO: protect OE pulse against long delay
-static inline void
+static void
 flip_to_0(void)
 {
 	_hw_clr(OE1);
@@ -239,7 +239,7 @@ flip_to_0(void)
 	_hw_clr(OE0);
 }
 
-static inline void
+static void
 flip_to_1(void)
 {
 	_hw_clr(OE0);
