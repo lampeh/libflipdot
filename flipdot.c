@@ -6,8 +6,8 @@
 #include "flipdot.h"
 
 
-#define SETBIT(b,i) (((b)[(i) >> 3]) |= (1 << ((i) & 7)))
-#define ISBITSET(b,i) ((((b)[(i) >> 3]) & (1 << ((i) & 7))) != 0)
+#define SETBIT(b,i) ((((uint8_t *)(b))[(i) >> 3]) |= (1 << ((i) & 7)))
+#define ISBITSET(b,i) (((((uint8_t *)(b))[(i) >> 3]) & (1 << ((i) & 7))) != 0)
 
 #ifndef _BV
 #define _BV(x) (1 << (x))
@@ -403,7 +403,7 @@ flipdot_bitmap_to_frame(const uint8_t *bitmap, flipdot_frame_t *frame)
 
 	for (uint_fast16_t i = 0; i < DISP_PIXEL_COUNT; i++) {
 		if (ISBITSET(bitmap, i)) {
-			SETBIT((uint8_t *)frame, i + ((i / MODULE_COLS) * COL_GAP));
+			SETBIT(frame, i + ((i / MODULE_COLS) * COL_GAP));
 		}
 	}
 }
@@ -415,7 +415,7 @@ flipdot_frame_to_bitmap(const uint8_t *frame, flipdot_bitmap_t *bitmap)
 
 	for (uint_fast16_t i = 0; i < DISP_PIXEL_COUNT; i++) {
 		if (ISBITSET(frame, i + ((i / MODULE_COLS) * COL_GAP))) {
-			SETBIT((uint8_t *)bitmap, i);
+			SETBIT(bitmap, i);
 		}
 	}
 }
