@@ -14,8 +14,8 @@
 #endif
 
 
-static uint8_t frames[2][FRAME_BYTE_COUNT];
-static uint8_t *frame_old, *frame_new;
+static flipdot_frame_t frames[2];
+static flipdot_frame_t *frame_old, *frame_new;
 
 
 static void
@@ -261,8 +261,8 @@ flipdot_init(void)
 
 	memset(frames[0], 0x00, sizeof(frames[0]));
 	memset(frames[1], 0x00, sizeof(frames[1]));
-	frame_old = frames[0];
-	frame_new = frames[1];
+	frame_old = &frames[0];
+	frame_new = &frames[1];
 }
 
 void
@@ -274,15 +274,15 @@ flipdot_shutdown(void)
 void
 flipdot_clear_to_0(void)
 {
-	memset(frame_old, 0x00, FRAME_BYTE_COUNT);
-	flipdot_display_frame(frame_old);
+	memset(frame_old, 0x00, sizeof(*frame_old));
+	flipdot_display_frame(*frame_old);
 }
 
 void
 flipdot_clear_to_1(void)
 {
-	memset(frame_old, 0xFF, FRAME_BYTE_COUNT);
-	flipdot_display_frame(frame_old);
+	memset(frame_old, 0xFF, sizeof(*frame_old));
+	flipdot_display_frame(*frame_old);
 }
 
 /*
@@ -320,7 +320,7 @@ flipdot_display_frame(uint8_t *frame)
 	uint8_t rows[REGISTER_ROW_BYTE_COUNT];
 	uint8_t *frameptr;
 
-	memcpy(frame_new, frame, FRAME_BYTE_COUNT);
+	memcpy(frame_new, frame, sizeof(*frame_new));
 	frameptr = (uint8_t *)frame_new;
 
 	for (uint_fast16_t row = 0; row < REGISTER_ROWS; row++) {
@@ -336,7 +336,7 @@ flipdot_display_frame(uint8_t *frame)
 void
 flipdot_display_bitmap(uint8_t *bitmap)
 {
-	uint8_t frame[FRAME_BYTE_COUNT];
+	flipdot_frame_t frame;
 
 	flipdot_bitmap_to_frame(bitmap, frame);
 	flipdot_display_frame(frame);
@@ -352,11 +352,11 @@ flipdot_update_frame(uint8_t *frame)
 	uint8_t *frameptr_new;
 	uint_fast8_t row_changed;
 
-	uint8_t *tmp = frame_old;
+	flipdot_frame_t *tmp = frame_old;
 	frame_old = frame_new;
 	frame_new = tmp;
 
-	memcpy(frame_new, frame, FRAME_BYTE_COUNT);
+	memcpy(frame_new, frame, sizeof(*frame_new));
 
 	frameptr_old = (uint8_t *)frame_old;
 	frameptr_new = (uint8_t *)frame_new;
@@ -388,7 +388,7 @@ flipdot_update_frame(uint8_t *frame)
 void
 flipdot_update_bitmap(uint8_t *bitmap)
 {
-	uint8_t frame[FRAME_BYTE_COUNT];
+	flipdot_frame_t frame;
 
 	flipdot_bitmap_to_frame(bitmap, frame);
 	flipdot_update_frame(frame);
