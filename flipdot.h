@@ -89,24 +89,23 @@ typedef uint8_t flipdot_row_reg_t[REGISTER_ROW_BYTE_COUNT];
 
 void flipdot_init(void);
 void flipdot_shutdown(void);
-// int flipdot_install_handler(void)
 
 void flipdot_clear_to_0(void);
 void flipdot_clear_to_1(void);
 static inline void flipdot_clear(void) { flipdot_clear_to_0(); }
 static inline void flipdot_clear_full(void) { flipdot_clear_to_0(); flipdot_clear_to_1(); flipdot_clear_to_0(); }
 
-void flipdot_display_row(uint8_t *rows, uint8_t *cols);
-void flipdot_display_row_diff(uint8_t *rows, uint8_t *cols_to_0, uint8_t *cols_to_1);
+void flipdot_display_row(const uint8_t *rows, const uint8_t *cols);
+void flipdot_display_row_diff(const uint8_t *rows, const uint8_t *cols_to_0, const uint8_t *cols_to_1);
 
-void flipdot_display_frame(uint8_t *frame);
-void flipdot_display_bitmap(uint8_t *bitmap);
+void flipdot_display_frame(const uint8_t *frame);
+void flipdot_display_bitmap(const uint8_t *bitmap);
 
-void flipdot_update_frame(uint8_t *frame);
-void flipdot_update_bitmap(uint8_t *bitmap);
+void flipdot_update_frame(const uint8_t *frame);
+void flipdot_update_bitmap(const uint8_t *bitmap);
 
-void flipdot_bitmap_to_frame(uint8_t *bitmap, uint8_t *frame);
-void flipdot_frame_to_bitmap(uint8_t *frame, uint8_t *bitmap);
+void flipdot_bitmap_to_frame(const uint8_t *bitmap, uint8_t *frame);
+void flipdot_frame_to_bitmap(const uint8_t *frame, uint8_t *bitmap);
 
 
 #endif /* FLIPDOT_H */
