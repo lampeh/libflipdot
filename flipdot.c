@@ -318,20 +318,18 @@ void
 flipdot_display_frame(uint8_t *frame)
 {
 	uint8_t rows[REGISTER_ROW_BYTE_COUNT];
-	uint8_t cols[REGISTER_COL_BYTE_COUNT];
 	uint8_t *frameptr;
 
 	memcpy(frame_new, frame, FRAME_BYTE_COUNT);
 	frameptr = (uint8_t *)frame_new;
 
 	for (uint_fast16_t row = 0; row < REGISTER_ROWS; row++) {
-		memcpy(cols, frameptr, sizeof(cols));
-		frameptr += sizeof(cols);
-
 		memset(rows, 0, sizeof(rows));
 		SETBIT(rows, row);
 
-		flipdot_display_row(rows, cols);
+		flipdot_display_row(rows, frameptr);
+
+		frameptr += REGISTER_COL_BYTE_COUNT;
 	}
 }
 
