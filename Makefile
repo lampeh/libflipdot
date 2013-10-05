@@ -1,28 +1,35 @@
-SOURCES=examples/flip_pipe.c examples/fliptest.c examples/flipclear.c examples/flipclearto0.c examples/flipclearto1.c
-
 CPPFLAGS=-I.
 CFLAGS=-g -O3 -flto -Wall -std=gnu99 -pedantic -funroll-loops -fno-common -ffunction-sections
 LDFLAGS=-flto -Wl,--relax,--gc-sections -L . -lflipdot -lbcm2835
 
-OBJECTS=$(SOURCES:.c=.o)
-EXECUTABLES=$(SOURCES:.c=)
-LIBRARIES=libflipdot.a
+LIB=libflipdot.a
+LIB_SOURCES=flipdot.c
+LIB_OBJECTS=$(LIB_SOURCES:.c=.o)
+LIB_DEP=$(LIB_SOURCES:.c=.dep)
+LIB_CFLAGS=$(CFLAGS) -DNOSLEEP -DGPIO_MULTI
+LIB_CPPFLAGS=$(CPPFLAGS)
 
-all: $(EXECUTABLES) $(LIBRARIES)
+SOURCES=$(wildcard examples/*.c)
+OBJECTS=$(SOURCES:.c=.o)
+DEP=$(SOURCES:.c=.dep)
+EXECUTABLES=$(SOURCES:.c=)
+
+all: $(LIB) $(EXECUTABLES)
 
 clean:
-	-rm $(EXECUTABLES) $(OBJECTS) $(LIBRARIES) flipdot.o
+	-rm $(LIB) $(LIB_OBJECTS) $(LIB_DEP) $(EXECUTABLES) $(OBJECTS) $(DEP)
 
-flipdot.o: flipdot.c flipdot.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -DNOSLEEP -DGPIO_MULTI -c -o $@ $<
+$(LIB): $(LIB_OBJECTS)
+	$(AR) rcs $@ $^
 
-$(EXECUTABLES): % : %.o $(LIBRARIES)
+$(EXECUTABLES): % : %.o $(LIB)
 	$(CC) -o $@ $< $(LDFLAGS)
 
-$(LIBRARIES): flipdot.o
-	$(AR) rcs $@ $^
+$(LIB_OBJECTS): %.o : %.c
+	$(CC) $(LIB_CFLAGS) $(LIB_CPPFLAGS) -c -o $@ $<
 
 %.dep: %.c
 	$(CC) $(CPPFLAGS) -MM -MT $(<:.c=.o) -MP -MF $@ $<
 
 -include $(SOURCES:.c=.dep)
+-include $(LIB_SOURCES:.c=.dep)
