@@ -31,5 +31,5 @@ $(LIB_OBJECTS): %.o : %.c
 %.dep: %.c
 	$(CC) $(CPPFLAGS) -MM -MT $(<:.c=.o) -MP -MF $@ $<
 
--include $(SOURCES:.c=.dep)
--include $(LIB_SOURCES:.c=.dep)
+-include $(DEP)
+-include $(LIB_DEP)
