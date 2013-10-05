@@ -4,6 +4,10 @@ libflipdot
 Flip Dot Display driver for Raspberry Pi  
 https://wiki.attraktor.org/FlipdotDisplay
 
+
+Installation
+------------
+
 * Install the [bcm2835](http://www.airspayce.com/mikem/bcm2835/) library
 * Edit flipdot.h
   * configure GPIO to display input mapping
@@ -13,6 +17,18 @@ https://wiki.attraktor.org/FlipdotDisplay
 * `sudo ./examples/fliptest`
 * `sudo ./examples/flipclear`
 * `echo 'Hello World!' |toilet -f 3x5 |sudo ./examples/flip_pipe`
+
+
+Examples
+--------
+
+`flip_pipe`: Reads an ASCII bitmap followed by an empty line (\\n\\n)
+from stdin and sends it to the display.  
+Use this [3x5](http://www.figlet.org/fontdb_example.cgi?font=3x5.flf)
+figlet font to pipe text onto the display.
+
+To use the library for your own code, copy flipdot.h and libflipdot.a
+where compiler and linker will find it. Link with `-lflipdot`.
 
 
 Functions
