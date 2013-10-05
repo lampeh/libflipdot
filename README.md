@@ -13,3 +13,56 @@ https://wiki.attraktor.org/FlipdotDisplay
 * `sudo ./examples/fliptest`
 * `sudo ./examples/flipclear`
 * `echo 'Hello World!' |toilet -f 3x5 |sudo ./examples/flip_pipe`
+
+
+Functions
+---------
+
+`void flipdot_init(void);`  
+Initialize hardware and internal buffers
+
+`void flipdot_shutdown(void);`  
+Shut down hardware outputs
+
+`void flipdot_clear(void);`  
+`void flipdot_clear_to_0(void);`  
+Flip all pixels to position 0
+
+`void flipdot_clear_to_1(void);`  
+Flip all pixels to position 1
+
+`void flipdot_clear_full(void)`  
+Flip all pixels to 0, to 1 and back to 0.
+This should recover pixels stuck in the middle between end positions
+
+`void flipdot_display_row(const uint8_t *rows, const uint8_t *cols);`  
+Flip all pixels in rows selected by `rows` to positions set in `cols`.  
+The internal frame buffer is **not** updated to reflect the changes
+
+`void flipdot_display_row_diff(const uint8_t *rows, const uint8_t *cols_to_0, const uint8_t *cols_to_1);`  
+Flip 0-bits in `cols_to_0` and 1-bits in `cols_to_1` in rows selected by `rows`.  
+The internal frame buffer is **not** updated to reflect the changes
+
+`void flipdot_display_frame(const uint8_t *frame);`  
+Display a full display frame.  
+`frame` contains all pixels shifted into the display registers,
+including blind gaps between horizontal modules
+
+`void flipdot_display_bitmap(const uint8_t *bitmap);`  
+Display a full bitmap.  
+`bitmap` contains only the visible pixels of the display,
+excluding any blind gaps
+
+`void flipdot_update_frame(const uint8_t *frame);`  
+Update the internal frame buffer and flip only the difference to the last frame.  
+`frame` contains all pixels shifted into the display registers,
+including blind gaps between horizontal modules
+
+`void flipdot_update_bitmap(const uint8_t *bitmap);`  
+Update the internal frame buffer and flip only the difference to the last frame.  
+`bitmap` contains only the visible pixels of the display,
+excluding any blind gaps
+
+`void flipdot_bitmap_to_frame(const uint8_t *bitmap, flipdot_frame_t *frame);`  
+`void flipdot_frame_to_bitmap(const uint8_t *frame, flipdot_bitmap_t *bitmap);`  
+Convert between bitmap and frame format by adding or removing blind gaps
