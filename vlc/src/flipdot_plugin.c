@@ -53,7 +53,7 @@ static int            Control(vout_display_t *, int, va_list);
 
 
 struct vout_display_sys_t {
-	uint8_t *frame;
+	flipdot_frame_t *frame;
 	picture_pool_t *pool;
 };
 
@@ -65,7 +65,7 @@ static int Open(vlc_object_t *object)
 {
 	vout_display_t *vd = (vout_display_t *)object;
 	vout_display_sys_t *sys = NULL;
-    
+
 	if (!bcm2835_init()) {
 		msg_Err(vd, "cannot initialize bcm2835 library");
 		goto error;
@@ -78,7 +78,7 @@ static int Open(vlc_object_t *object)
 		goto error;
 	}
 
-	sys->frame = calloc(1, FRAME_BYTE_COUNT);
+	sys->frame = calloc(1, sizeof(*(sys->frame)));
 	if (!sys->frame) {
 		msg_Err(vd, "cannot allocate flipdot frame");
 		goto error;
@@ -161,8 +161,8 @@ static picture_pool_t *Pool(vout_display_t *vd, unsigned count)
 	return sys->pool;
 }
 
-#define SETBIT(b,i) (((b)[(i) >> 3]) |= (1 << ((i) & 7)))
-#define CLEARBIT(b,i) (((b)[(i) >> 3]) &=~ (1 << ((i) & 7)))
+#define SETBIT(b,i) ((((uint8_t *)(b))[(i) >> 3]) |= (1 << ((i) & 7)))
+#define CLEARBIT(b,i) ((((uint8_t *)(b))[(i) >> 3]) &=~ (1 << ((i) & 7)))
 
 /**
  * Prepare a picture for display
@@ -173,7 +173,7 @@ static void Prepare(vout_display_t *vd, picture_t *picture, subpicture_t *subpic
 //	int64_t threshold = var_InheritInteger(vd, "threshold");
 	uint8_t threshold = 127;
 
-	memset(sys->frame, 0x00, FRAME_BYTE_COUNT);
+	memset(sys->frame, 0x00, sizeof(*(sys->frame)));
 
 	// TODO: dithering
 
