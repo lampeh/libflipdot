@@ -11,7 +11,7 @@
 
 
 #define BMP_SETBIT(b,x,y) ((uint8_t *)(b))[(((y)*DISP_COLS)+(x))>>3]|=(1<<((((y)*DISP_COLS)+(x))&7));
-#define BMP_CLEARBIT(b,x,y) ((uint8_t *)(b))[(((y)*DISP_COLS)+(x))>>3]&=(1<<((((y)*DISP_COLS)+(x))&7))^0xFF
+#define BMP_CLEARBIT(b,x,y) (((uint8_t *)(b))[(((y)*DISP_COLS)+(x))>>3]&=(1<<((((y)*DISP_COLS)+(x))&7))^0xFF)
 
 flipdot_bitmap_t bmp;
 
