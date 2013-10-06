@@ -7,7 +7,7 @@
 
 
 #define BMP_SETBIT(b,x,y) ((uint8_t *)(b))[(((y)*DISP_COLS)+(x))>>3]|=(1<<((((y)*DISP_COLS)+(x))&7));
-#define BMP_CLEARBIT(b,x,y) ((uint8_t *)(b))[(((y)*DISP_COLS)+(x))>>3]&=(1<<((((y)*DISP_COLS)+(x))&7))^0xFF;
+#define BMP_CLEARBIT(b,x,y) (((uint8_t *)(b))[(((y)*DISP_COLS)+(x))>>3]&=(1<<((((y)*DISP_COLS)+(x))&7))^0xFF);
 
 flipdot_bitmap_t bmp;
 unsigned int x, y;
@@ -51,9 +51,7 @@ int main(void) {
 
 		if (x < DISP_COLS && y < DISP_ROWS) {
 			// Alles ist Eins - ausser der Null (und Space)
-			if (c == '0' || c == ' ') {
-				BMP_CLEARBIT(bmp, x, y);
-			} else {
+			if (c != '0' && c != ' ') {
 				BMP_SETBIT(bmp, x, y);
 			}
 			x++;
