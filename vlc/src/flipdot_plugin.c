@@ -178,13 +178,10 @@ static void Prepare(vout_display_t *vd, picture_t *picture, subpicture_t *subpic
 	// TODO: dithering
 
 	// another slow bit copy
-	for (unsigned int y1 = vd->source.i_y_offset; y1 < (vd->source.i_y_offset + picture->p->i_visible_lines); y1++) {
-		for (unsigned int x1 = vd->source.i_x_offset; x1 < (vd->source.i_x_offset + picture->p->i_visible_pitch); x1++) {
-
-			unsigned long pixelidx = (y1 * picture->p->i_pitch) + (x1 * picture->p->i_pixel_pitch);
-
-			unsigned long y = y1 - vd->source.i_y_offset;
-			unsigned long x = x1 - vd->source.i_x_offset;
+	for (unsigned long y = 0; y < picture->p->i_visible_lines; y++) {
+		for (unsigned long x = 0; x < picture->p->i_visible_pitch; x++) {
+			unsigned long pixelidx = ((y + vd->source.i_y_offset) * picture->p->i_pitch) +
+										((x + vd->source.i_x_offset) * picture->p->i_pixel_pitch);
 
 			uint8_t pixel_value = *(picture->p->p_pixels + pixelidx);
 			uint8_t pixel = 0;
