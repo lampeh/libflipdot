@@ -17,7 +17,7 @@ index 03598a9..450e928 100644
      if (uid == 0)
      {
 diff --git a/configure.ac b/configure.ac
-index a273d18..eb81c8f 100644
+index a273d18..fb9ef37 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -1480,6 +1480,20 @@ AS_IF([test "${enable_run_as_root}" = "yes"],[
@@ -31,10 +31,10 @@ index a273d18..eb81c8f 100644
 +    [initialize bcm2835 library in vlc-wrapper (default disabled)])])
 +AS_IF([test "${enable_bcm2835_init}" = "yes"],[
 +    AC_CHECK_LIB(bcm2835, bcm2835_init, [
-+      VLC_ADD_LIBS([vlc_wrapper],[-lbcm2835])],
++      VLC_ADD_LIBS([vlc_wrapper],[-lbcm2835])
++      AC_DEFINE(BCM2835_INIT_WRAPPER, 1,
++                [Define to 1 to initalize bcm2835 library in root wrapper.])],
 +      [ AC_MSG_ERROR([Cannot find bcm2835 library...]) ])
-+    AC_DEFINE(BCM2835_INIT_WRAPPER, 1,
-+              [Define to 1 to initalize bcm2835 library in root wrapper.])
 +])
 +
 +dnl
