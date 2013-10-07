@@ -10,6 +10,7 @@ Installation
     [patch](http://www.linuxquestions.org/questions/linux-general-1/solved-vlc-running-under-root-without-compiling-748189/)
     the binary:  
     `sed -e 's/geteuid/getppid/' </usr/bin/vlc >./vlc`
+  * or patch vlc to [call bcm2835_init in vlc-wrapper](patches/vlc-wrapper-bcm2835.diff)
 * `make && sudo make install`
 * `sudo ./vlc -V flipdot`
 * adjust output with video filters:  
