@@ -66,10 +66,12 @@ static int Open(vlc_object_t *object)
 	vout_display_t *vd = (vout_display_t *)object;
 	vout_display_sys_t *sys = NULL;
 
+#ifndef BCM2835_INIT_WRAPPER
 	if (!bcm2835_init()) {
 		msg_Err(vd, "cannot initialize bcm2835 library");
 		goto error;
 	}
+#endif
 
 	/* Allocate structure */
 	vd->sys = sys = calloc(1, sizeof(*sys));
