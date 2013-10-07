@@ -38,17 +38,17 @@ Optionally transcode a stream into dithered black-and-white scaled to the total 
 10.0.0.2: top right  
 
     rvlc -V flipdot --no-audio --control netsync --netsync-master-ip 10.0.0.1  
-    --video-filter "croppadd{cropbottom=64,cropleft=80}"  
+    --video-filter "croppadd{cropbottom=48,cropleft=60}"  
     udp://@239.255.1.2:1234
 
 10.0.0.3: bottom left  
 
     rvlc -V flipdot --no-audio --control netsync --netsync-master-ip 10.0.0.1  
-    --video-filter "croppadd{croptop=64,cropright=80}"  
+    --video-filter "croppadd{croptop=48,cropright=60}"  
     udp://@239.255.1.2:1234
 
 10.0.0.4: bottom right  
 
     rvlc -V flipdot --no-audio --control netsync --netsync-master-ip 10.0.0.1  
-    --video-filter "croppadd{croptop=64,cropleft=80}"  
+    --video-filter "croppadd{croptop=48,cropleft=60}"  
     udp://@239.255.1.2:1234
