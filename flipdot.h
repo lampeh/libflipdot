@@ -96,6 +96,7 @@ static inline void flipdot_clear(void) { flipdot_clear_to_0(); }
 static inline void flipdot_clear_full(void) { flipdot_clear_to_0(); flipdot_clear_to_1(); flipdot_clear_to_0(); }
 
 void flipdot_display_row(const uint8_t *rows, const uint8_t *cols);
+void flipdot_display_row_single(const uint8_t *rows, const uint8_t *cols, uint8_t oe);
 void flipdot_display_row_diff(const uint8_t *rows, const uint8_t *cols_to_0, const uint8_t *cols_to_1);
 
 void flipdot_display_frame(const uint8_t *frame);
