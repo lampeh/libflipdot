@@ -220,18 +220,20 @@ int main(void) {
 			uint16_t rows_to_1;
 
 			// FFTW "halfcomplex" format
-			// real values in freq_domain[0] ... freq_domain[(fft_len/2)-1]
-			// imaginary values in freq_domain[fft_len-1] ... freq_domain[fft_len/2]
+			// real values in freq_domain[0] ... freq_domain[fft_len/2]
+			// imaginary values in freq_domain[fft_len-1] ... freq_domain[(fft_len/2)+1]
+			// values in freq_domain[0] and freq_domain[fft_len/2] have no imaginary parts
+			// http://www.fftw.org/fftw3_doc/The-Halfcomplex_002dformat-DFT.html
 
 			// scale FFT bins to FFT_WIDTH
 			do {
 				// magnitude = sqrt(r^2 + i^2)
 				sum += sqrt((freq_domain[last] * freq_domain[last]) +
-						(freq_domain[fft_len - last - 1] * freq_domain[fft_len - last - 1]));
+						(freq_domain[fft_len - last] * freq_domain[fft_len - last]));
 				last++;
 				count++;
 //				fprintf(stderr, "i = %d (%d), last = %d, count = %d\n", i, ((i+1) * (fft_len/2)) / FFT_WIDTH, last, count);
-			} while (last <= ((i+1) * (fft_len/2)) / FFT_WIDTH && last < (fft_len/2)-1);
+			} while (last <= ((i+1) * (fft_len/2)) / FFT_WIDTH && last < (fft_len/2));
 
 			// calculate dB and scale to FFT_HEIGHT
 			double mag = MAX(minmag, MIN(maxmag, sum / count));
@@ -279,8 +281,8 @@ int main(void) {
 		max_changes = MAX(max_changes, rows_changed_0 + rows_changed_1);
 		fprintf(stderr, "flipdot changes: %2d + %2d = %3d (max: %3d)\n", rows_changed_0, rows_changed_1, rows_changed_0 + rows_changed_1, max_changes);
 
-		if (last != (fft_len/2)-1) {
-			fprintf(stderr, "bug: last != (fft_len/2)-1: %d, %d\n", last, (fft_len/2)-1);
+		if (last != (fft_len/2)) {
+			fprintf(stderr, "bug: last != (fft_len/2)-1: %d, %d\n", last, (fft_len/2));
 		}
 #endif
 
