@@ -304,6 +304,19 @@ flipdot_display_row(const uint8_t *rows, const uint8_t *cols)
 }
 
 void
+flipdot_display_row_single(const uint8_t *rows, const uint8_t *cols, uint8_t oe)
+{
+	sreg_fill_both(rows, REGISTER_ROWS, cols, REGISTER_COLS);
+	sreg_strobe();
+
+	if (oe == 0) {
+		flip_to_0();
+	} else {
+		flip_to_1();
+	}
+}
+
+void
 flipdot_display_row_diff(const uint8_t *rows, const uint8_t *cols_to_0, const uint8_t *cols_to_1)
 {
 	sreg_fill_both(rows, REGISTER_ROWS, cols_to_0, REGISTER_COLS);
