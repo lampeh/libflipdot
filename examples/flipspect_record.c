@@ -115,10 +115,10 @@ int main(void) {
 	**      FFTW calculations will be quicker.
 	*/
 	fft_len = FFT_WIDTH * ((val / FREQ_MIN / FFT_WIDTH) + 1);
+//	fft_len = fft_len * 2;
 	fprintf(stderr, "minimum FFT size: %d samples\n", fft_len);
 
 	fft_len += 0x40 - (fft_len & 0x3f);
-//	fft_len = fft_len * 2;
 	fprintf(stderr, "aligned FFT size: %d samples\n", fft_len);
 
 	/* Set period size */
@@ -230,7 +230,7 @@ int main(void) {
 						(freq_domain[fft_len - last - 1] * freq_domain[fft_len - last - 1]));
 				last++;
 				count++;
-//fprintf(stderr, "i = %d (%d), last = %d, count = %d\n", i, ((i+1) * (fft_len/2)) / FFT_WIDTH, last, count);
+//				fprintf(stderr, "i = %d (%d), last = %d, count = %d\n", i, ((i+1) * (fft_len/2)) / FFT_WIDTH, last, count);
 			} while (last <= ((i+1) * (fft_len/2)) / FFT_WIDTH && last < (fft_len/2)-1);
 
 			// calculate dB and scale to FFT_HEIGHT
@@ -245,7 +245,7 @@ int main(void) {
 			rows[i] = rows_new;
 
 #ifdef VERBOSE
-			fprintf(stderr, "%2d: mag = %3.4f  ydB = %3.4f \tbar = %2d  rows_new = %5u  rows[i] = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c\e[K\n",
+			fprintf(stderr, "%2d: mag = %3.4f  ydB = %3.4f   \tbar = %2d  rows_new = %5u  rows[i] = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c\e[K\n",
 				i, mag, ydB, bar, rows_new, rows[i], rows_to_0, rows_to_1, (rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '));
 
 			if (rows_to_0) {
