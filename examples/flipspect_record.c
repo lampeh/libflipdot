@@ -121,6 +121,10 @@ int main(void) {
 	fft_len += 0x40 - (fft_len & 0x3f);
 	fprintf(stderr, "aligned FFT size: %d samples\n", fft_len);
 
+	if ((fft_len-2) % FFT_WIDTH != 0) {
+		fprintf(stderr, "warning: (fft_len-2) is not a multiple of FFT_WIDTH (%d %% %d = %d)\n", fft_len, FFT_WIDTH, fft_len % FFT_WIDTH);
+	}
+
 	/* Set period size */
 	frames = fft_len;
 	snd_pcm_hw_params_set_period_size_near(handle, params, &frames, &dir);
