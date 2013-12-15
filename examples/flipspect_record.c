@@ -122,7 +122,7 @@ int main(void) {
 	fprintf(stderr, "aligned FFT size: %d samples\n", fft_len);
 
 	if ((fft_len-2) % FFT_WIDTH != 0) {
-		fprintf(stderr, "warning: (fft_len-2) is not a multiple of FFT_WIDTH (%d %% %d = %d)\n", fft_len, FFT_WIDTH, fft_len % FFT_WIDTH);
+		fprintf(stderr, "warning: (fft_len-2) is not a multiple of FFT_WIDTH (%d %% %d = %d)\n", fft_len-2, FFT_WIDTH, (fft_len-2) % FFT_WIDTH);
 	}
 
 	/* Set period size */
