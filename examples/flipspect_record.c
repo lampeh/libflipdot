@@ -74,6 +74,19 @@ const static double minmag = 0.01;
 const static double maxmag = 200.0;
 static double mindB;
 
+#ifdef VERBOSE_FULL
+static char bargraph[][9] = {
+	"        ",
+	"X       ",
+	"XX      ",
+	"XXX     ",
+	"XXXX    ",
+	"XXXXX   ",
+	"XXXXXX  ",
+	"XXXXXXX ",
+	"XXXXXXXX"
+};
+#endif
 
 int main(void) {
 	int rc;
@@ -274,8 +287,10 @@ int main(void) {
 
 #ifdef VERBOSE
 #ifdef VERBOSE_FULL
-			fprintf(stderr, "%2d: mag = %3.4f  ydB = %3.4f   \tbar = %2d  rows_new = %5u  rows[i] = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c\e[K\n",
-				i, mag, ydB, bar, rows_new, rows[i], rows_to_0, rows_to_1, (rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '));
+//			fprintf(stderr, "%2d: mag = %3.4f  ydB = %3.4f   \tbar = %2d  rows_new = %5u  rows[i] = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c\e[K\n",
+//				i, mag, ydB, bar, rows_new, rows[i], rows_to_0, rows_to_1, (rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '));
+			fprintf(stderr, "%2d: mag = %3.4f  ydB = %3.4f   \tbar = %2d  %8s  rows_new = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c\e[K\n",
+				i, mag, ydB, bar, bargraph[bar/2], rows_new, rows_to_0, rows_to_1, (rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '));
 #endif
 
 			if (rows_to_0) {
