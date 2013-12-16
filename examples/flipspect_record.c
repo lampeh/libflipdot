@@ -188,19 +188,18 @@ int main(void) {
 #ifdef VERBOSE
 	fprintf(stderr, "\e[H\e[2J");
 	int max_changes = 0;
-	struct timeval tv0, tv1, tv2;
+	struct timeval tv0, tv1, tv2, tv3, tv4;
 	suseconds_t max_usec1 = 0, max_usec2 = 0;
+	suseconds_t max_usec3 = 0, max_usec4 = 0;
+	gettimeofday(&tv1, NULL);
 #endif
 
 	while (1) {
-#ifdef VERBOSE
-	gettimeofday(&tv1, NULL);
-#endif
 
 		rc = snd_pcm_readi(handle, buffer, frames);
 
 #ifdef VERBOSE
-	gettimeofday(&tv2, NULL);
+		gettimeofday(&tv2, NULL);
 #endif
 
 		if (rc == -EPIPE) {
@@ -265,6 +264,8 @@ int main(void) {
 			rows[i] = rows_new;
 
 #ifdef VERBOSE
+			gettimeofday(&tv3, NULL);
+
 			fprintf(stderr, "%2d: mag = %3.4f  ydB = %3.4f   \tbar = %2d  rows_new = %5u  rows[i] = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c\e[K\n",
 				i, mag, ydB, bar, rows_new, rows[i], rows_to_0, rows_to_1, (rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '));
 
@@ -274,6 +275,8 @@ int main(void) {
 			if (rows_to_1) {
 				rows_changed_1++;
 			}
+
+			gettimeofday(&tv4, NULL);
 #endif
 
 #ifndef NOFLIP
@@ -297,15 +300,26 @@ int main(void) {
 
 #ifdef VERBOSE
 		gettimeofday(&tv0, NULL);
+
 		max_usec1 = MAX(max_usec1, tv0.tv_usec - tv1.tv_usec);
 		max_usec2 = MAX(max_usec2, tv0.tv_usec - tv2.tv_usec);
-
+		max_usec3 = MAX(max_usec3, tv3.tv_usec - tv2.tv_usec);
+		max_usec4 = MAX(max_usec4, tv0.tv_usec - tv4.tv_usec);
 		max_changes = MAX(max_changes, rows_changed_0 + rows_changed_1);
-		fprintf(stderr, "flipdot changes: %2d + %2d = %3d (max: %3d)\nframe processed in %.2fms   \t(max: %.2fms)\n"
-				"total frame time: %.2fms   \t(max: %.2fms)\n",
+
+		fprintf(stderr, "flipdot changes: %2d + %2d = %3d (max: %3d)\n"
+				"frame processed in \t%.2fms   \t(max: %.2fms)\n"
+				"frame displayed in \t%.2fms   \t(max: %.2fms)\n"
+				"total frame time: \t%.2fms   \t(max: %.2fms)\n"
+				"time incl. read: \t%.2fms   \t(max: %.2fms)\n",
 				rows_changed_0, rows_changed_1, rows_changed_0 + rows_changed_1, max_changes,
+				(double)(tv3.tv_usec - tv2.tv_usec)/1000, (double)max_usec3 / 1000,
+				(double)(tv0.tv_usec - tv4.tv_usec)/1000, (double)max_usec4 / 1000,
 				(double)(tv0.tv_usec - tv2.tv_usec)/1000, (double)max_usec2 / 1000,
 				(double)(tv0.tv_usec - tv1.tv_usec)/1000, (double)max_usec1 / 1000);
+
+		tv1 = tv0;
+
 		if (last != (fft_len/2)) {
 			fprintf(stderr, "bug: last != (fft_len/2)-1: %d, %d\n", last, (fft_len/2));
 		}
