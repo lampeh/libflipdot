@@ -33,10 +33,11 @@
 // used in FFT size calculation from sndfile-spectrogram
 //#define FREQ_MIN 20
 #define FREQ_MIN 40
+//#define FREQ_MIN 1000
 
 //#define FREQ_MAX 8000
-#define FREQ_MAX 10000
-//#define FREQ_MAX 16000
+//#define FREQ_MAX 10000
+#define FREQ_MAX 16000
 //#define FREQ_MAX 20000
 
 #define SCALE 10
