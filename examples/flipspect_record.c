@@ -323,7 +323,8 @@ int main(void) {
 
 		max_changes = MAX(max_changes, rows_changed_0 + rows_changed_1);
 
-		fprintf(stderr, "flipdot changes: %2d + %2d = %3d (max: %3d)\n"
+		fprintf(stderr, "\n"
+				"flipdot changes: %2d + %2d = %3d (max: %3d)\n"
 				"frame processed in \t%.2fms   \t(max: %.2fms)\n"
 				"frame displayed in \t%.2fms   \t(max: %.2fms)\n"
 				"total frame time: \t%.2fms   \t(max: %.2fms)\n"
@@ -341,7 +342,7 @@ int main(void) {
 		}
 
 #ifndef VERBOSE_FULL
-		fprintf(stderr, "\e[5A");
+		fprintf(stderr, "\e[6A");
 #endif
 
 #endif
