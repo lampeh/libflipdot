@@ -188,7 +188,9 @@ int main(void) {
 #ifdef VERBOSE
 	fprintf(stderr, "\e[H\e[2J");
 	int max_changes = 0;
-	struct timeval tv0, tv1, tv2, tv3, tv4;
+	struct timeval tv0, tv1, tv2, tv4;
+	double cur_msec1 = 0, cur_msec2 = 0;
+	double cur_msec3 = 0, cur_msec4 = 0;
 	double max_msec1 = 0, max_msec2 = 0;
 	double max_msec3 = 0, max_msec4 = 0;
 	gettimeofday(&tv1, NULL);
@@ -219,6 +221,7 @@ int main(void) {
 		fprintf(stderr, "\e[H");
 		int rows_changed_0 = 0;
 		int rows_changed_1 = 0;
+		cur_msec4 = 0;
 #endif
 
 		for (i = 0; i < rc; i++) {
@@ -264,8 +267,6 @@ int main(void) {
 			rows[i] = rows_new;
 
 #ifdef VERBOSE
-			gettimeofday(&tv3, NULL);
-
 			fprintf(stderr, "%2d: mag = %3.4f  ydB = %3.4f   \tbar = %2d  rows_new = %5u  rows[i] = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c\e[K\n",
 				i, mag, ydB, bar, rows_new, rows[i], rows_to_0, rows_to_1, (rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '));
 
@@ -296,19 +297,20 @@ int main(void) {
 				flipdot_display_row_single((uint8_t *)&rows_to_1, cols, 1);
 			}
 #endif
+
+#ifdef VERBOSE
+			gettimeofday(&tv0, NULL);
+			cur_msec4 += ((tv0.tv_sec - tv4.tv_sec)*1000) + ((double)(tv0.tv_usec - tv4.tv_usec)/1000);
+#endif
 		}
 
 #ifdef VERBOSE
-		gettimeofday(&tv0, NULL);
-
-		double cur_msec1 = ((tv0.tv_sec - tv1.tv_sec)*1000) + ((double)(tv0.tv_usec - tv1.tv_usec)/1000);
-		double cur_msec2 = ((tv0.tv_sec - tv2.tv_sec)*1000) + ((double)(tv0.tv_usec - tv2.tv_usec)/1000);
-		double cur_msec3 = ((tv3.tv_sec - tv2.tv_sec)*1000) + ((double)(tv3.tv_usec - tv2.tv_usec)/1000);
-		double cur_msec4 = ((tv0.tv_sec - tv4.tv_sec)*1000) + ((double)(tv0.tv_usec - tv4.tv_usec)/1000);
+		cur_msec1 = ((tv0.tv_sec - tv1.tv_sec)*1000) + ((double)(tv0.tv_usec - tv1.tv_usec)/1000);
+		cur_msec2 = ((tv0.tv_sec - tv2.tv_sec)*1000) + ((double)(tv0.tv_usec - tv2.tv_usec)/1000);
 
 		max_msec1 = MAX(max_msec1, cur_msec1); 
 		max_msec2 = MAX(max_msec2, cur_msec2); 
-		max_msec3 = MAX(max_msec3, cur_msec3); 
+		max_msec3 = MAX(max_msec3, cur_msec2 - cur_msec4); 
 		max_msec4 = MAX(max_msec4, cur_msec4); 
 
 		max_changes = MAX(max_changes, rows_changed_0 + rows_changed_1);
@@ -319,7 +321,7 @@ int main(void) {
 				"total frame time: \t%.2fms   \t(max: %.2fms)\n"
 				"time incl. read: \t%.2fms   \t(max: %.2fms)\n",
 				rows_changed_0, rows_changed_1, rows_changed_0 + rows_changed_1, max_changes,
-				cur_msec3, max_msec3, cur_msec4, max_msec4, cur_msec2, max_msec2, cur_msec1, max_msec1);
+				cur_msec2 - cur_msec4, max_msec3, cur_msec4, max_msec4, cur_msec2, max_msec2, cur_msec1, max_msec1);
 
 		tv1 = tv0;
 
