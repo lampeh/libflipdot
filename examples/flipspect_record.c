@@ -148,6 +148,8 @@ int main(void) {
 	}
 	fprintf(stderr, "alsa period size set to %d samples = %d bytes/period\n", frames, size);
 
+	fprintf(stderr, "frame window: %.2fms (%.2f fps)\n", ((double)frames / (double)val)*1000, 1/((double)frames / (double)val));
+
 	time_domain = fftw_malloc(fft_len * sizeof(double));
 	freq_domain = fftw_malloc(fft_len * sizeof(double));
 
