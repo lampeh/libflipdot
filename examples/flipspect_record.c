@@ -189,8 +189,8 @@ int main(void) {
 	fprintf(stderr, "\e[H\e[2J");
 	int max_changes = 0;
 	struct timeval tv0, tv1, tv2, tv3, tv4;
-	suseconds_t max_usec1 = 0, max_usec2 = 0;
-	suseconds_t max_usec3 = 0, max_usec4 = 0;
+	double max_msec1 = 0, max_msec2 = 0;
+	double max_msec3 = 0, max_msec4 = 0;
 	gettimeofday(&tv1, NULL);
 #endif
 
@@ -301,10 +301,16 @@ int main(void) {
 #ifdef VERBOSE
 		gettimeofday(&tv0, NULL);
 
-		max_usec1 = MAX(max_usec1, tv0.tv_usec - tv1.tv_usec);
-		max_usec2 = MAX(max_usec2, tv0.tv_usec - tv2.tv_usec);
-		max_usec3 = MAX(max_usec3, tv3.tv_usec - tv2.tv_usec);
-		max_usec4 = MAX(max_usec4, tv0.tv_usec - tv4.tv_usec);
+		double cur_msec1 = ((tv0.tv_sec - tv1.tv_sec)*1000) + ((double)(tv0.tv_usec - tv1.tv_usec)/1000);
+		double cur_msec2 = ((tv0.tv_sec - tv2.tv_sec)*1000) + ((double)(tv0.tv_usec - tv2.tv_usec)/1000);
+		double cur_msec3 = ((tv3.tv_sec - tv2.tv_sec)*1000) + ((double)(tv3.tv_usec - tv2.tv_usec)/1000);
+		double cur_msec4 = ((tv0.tv_sec - tv4.tv_sec)*1000) + ((double)(tv0.tv_usec - tv4.tv_usec)/1000);
+
+		max_msec1 = MAX(max_msec1, cur_msec1); 
+		max_msec2 = MAX(max_msec2, cur_msec2); 
+		max_msec3 = MAX(max_msec3, cur_msec3); 
+		max_msec4 = MAX(max_msec4, cur_msec4); 
+
 		max_changes = MAX(max_changes, rows_changed_0 + rows_changed_1);
 
 		fprintf(stderr, "flipdot changes: %2d + %2d = %3d (max: %3d)\n"
@@ -313,10 +319,7 @@ int main(void) {
 				"total frame time: \t%.2fms   \t(max: %.2fms)\n"
 				"time incl. read: \t%.2fms   \t(max: %.2fms)\n",
 				rows_changed_0, rows_changed_1, rows_changed_0 + rows_changed_1, max_changes,
-				(double)(tv3.tv_usec - tv2.tv_usec)/1000, (double)max_usec3 / 1000,
-				(double)(tv0.tv_usec - tv4.tv_usec)/1000, (double)max_usec4 / 1000,
-				(double)(tv0.tv_usec - tv2.tv_usec)/1000, (double)max_usec2 / 1000,
-				(double)(tv0.tv_usec - tv1.tv_usec)/1000, (double)max_usec1 / 1000);
+				cur_msec3, max_msec3, cur_msec4, max_msec4, cur_msec2, max_msec2, cur_msec1, max_msec1);
 
 		tv1 = tv0;
 
