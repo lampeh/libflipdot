@@ -10,6 +10,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
+#include <sys/time.h>
 
 #include <alsa/asoundlib.h>
 #include <fftw3.h>
@@ -187,10 +188,20 @@ int main(void) {
 #ifdef VERBOSE
 	fprintf(stderr, "\e[H\e[2J");
 	int max_changes = 0;
+	struct timeval tv0, tv1, tv2;
+	suseconds_t max_usec1 = 0, max_usec2 = 0;
 #endif
 
 	while (1) {
+#ifdef VERBOSE
+	gettimeofday(&tv1, NULL);
+#endif
+
 		rc = snd_pcm_readi(handle, buffer, frames);
+
+#ifdef VERBOSE
+	gettimeofday(&tv2, NULL);
+#endif
 
 		if (rc == -EPIPE) {
 			/* EPIPE means overrun */
@@ -285,9 +296,16 @@ int main(void) {
 		}
 
 #ifdef VERBOSE
-		max_changes = MAX(max_changes, rows_changed_0 + rows_changed_1);
-		fprintf(stderr, "flipdot changes: %2d + %2d = %3d (max: %3d)\n", rows_changed_0, rows_changed_1, rows_changed_0 + rows_changed_1, max_changes);
+		gettimeofday(&tv0, NULL);
+		max_usec1 = MAX(max_usec1, tv0.tv_usec - tv1.tv_usec);
+		max_usec2 = MAX(max_usec2, tv0.tv_usec - tv2.tv_usec);
 
+		max_changes = MAX(max_changes, rows_changed_0 + rows_changed_1);
+		fprintf(stderr, "flipdot changes: %2d + %2d = %3d (max: %3d)\nframe processed in %.2fms   \t(max: %.2fms)\n"
+				"total frame time: %.2fms   \t(max: %.2fms)\n",
+				rows_changed_0, rows_changed_1, rows_changed_0 + rows_changed_1, max_changes,
+				(double)(tv0.tv_usec - tv2.tv_usec)/1000, (double)max_usec2 / 1000,
+				(double)(tv0.tv_usec - tv1.tv_usec)/1000, (double)max_usec1 / 1000);
 		if (last != (fft_len/2)) {
 			fprintf(stderr, "bug: last != (fft_len/2)-1: %d, %d\n", last, (fft_len/2));
 		}
