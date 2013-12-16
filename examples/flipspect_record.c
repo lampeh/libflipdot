@@ -21,8 +21,10 @@
 
 // disable flipdot output for debugging
 #define NOFLIP
-// display state on stderr for every frame
+// display timing on stderr for every frame
 #define VERBOSE
+// display state on stderr for every frame
+//#define VERBOSE_FULL
 
 #define FFT_WIDTH DISP_COLS
 #define FFT_HEIGHT DISP_ROWS
@@ -186,11 +188,13 @@ int main(void) {
 //	minmag = pow(10.0, mindB / SCALE);
 
 #ifdef VERBOSE
+#ifdef VERBOSE_FULL
 	fprintf(stderr, "\e[H\e[2J");
+#endif
 	int max_changes = 0;
 	struct timeval tv0, tv1, tv2, tv4;
 	double cur_msec1 = 0, cur_msec2 = 0;
-	double cur_msec3 = 0, cur_msec4 = 0;
+	double cur_msec4 = 0;
 	double max_msec1 = 0, max_msec2 = 0;
 	double max_msec3 = 0, max_msec4 = 0;
 	gettimeofday(&tv1, NULL);
@@ -218,7 +222,9 @@ int main(void) {
 		}
 
 #ifdef VERBOSE
+#ifdef VERBOSE_FULL
 		fprintf(stderr, "\e[H");
+#endif
 		int rows_changed_0 = 0;
 		int rows_changed_1 = 0;
 		cur_msec4 = 0;
@@ -267,8 +273,10 @@ int main(void) {
 			rows[i] = rows_new;
 
 #ifdef VERBOSE
+#ifdef VERBOSE_FULL
 			fprintf(stderr, "%2d: mag = %3.4f  ydB = %3.4f   \tbar = %2d  rows_new = %5u  rows[i] = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c\e[K\n",
 				i, mag, ydB, bar, rows_new, rows[i], rows_to_0, rows_to_1, (rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '));
+#endif
 
 			if (rows_to_0) {
 				rows_changed_0++;
@@ -327,7 +335,15 @@ int main(void) {
 
 		if (last != (fft_len/2)) {
 			fprintf(stderr, "bug: last != (fft_len/2)-1: %d, %d\n", last, (fft_len/2));
+#ifndef VERBOSE_FULL
+			fprintf(stderr, "\e[1A");
+#endif
 		}
+
+#ifndef VERBOSE_FULL
+		fprintf(stderr, "\e[5A");
+#endif
+
 #endif
 
 /*
