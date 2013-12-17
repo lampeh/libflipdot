@@ -304,6 +304,19 @@ flipdot_display_row(const uint8_t *rows, const uint8_t *cols)
 }
 
 void
+flipdot_display_row_single(const uint8_t *rows, const uint8_t *cols, uint8_t oe)
+{
+	sreg_fill_both(rows, REGISTER_ROWS, cols, REGISTER_COLS);
+	sreg_strobe();
+
+	if (oe == 0) {
+		flip_to_0();
+	} else {
+		flip_to_1();
+	}
+}
+
+void
 flipdot_display_row_diff(const uint8_t *rows, const uint8_t *cols_to_0, const uint8_t *cols_to_1)
 {
 	sreg_fill_both(rows, REGISTER_ROWS, cols_to_0, REGISTER_COLS);
@@ -390,13 +403,9 @@ flipdot_update_frame(const uint8_t *frame)
 			if (row_changed_to_0 && row_changed_to_1) {
 				flipdot_display_row_diff(rows, cols_to_0, cols_to_1);
 			} else if (row_changed_to_0) {
-				sreg_fill_both(rows, REGISTER_ROWS, cols_to_0, REGISTER_COLS);
-				sreg_strobe();
-				flip_to_0();
+				flipdot_display_row_single(rows, cols_to_0, 0);
 			} else {
-				sreg_fill_both(rows, REGISTER_ROWS, cols_to_1, REGISTER_COLS);
-				sreg_strobe();
-				flip_to_1();
+				flipdot_display_row_single(rows, cols_to_1, 1);
 			}
 		}
 	}
