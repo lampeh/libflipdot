@@ -135,7 +135,8 @@ int main(void) {
 	*/
 	// FFT resolution = samplerate / fft_len
 	// align to FFT_WIDTH (two elements ignored)
-	fft_len = 2 + (FFT_WIDTH * ((val / FREQ_MIN / FFT_WIDTH) + 1));
+	//fft_len = 2 + (FFT_WIDTH * ((val / FREQ_MIN / FFT_WIDTH) + 1));
+	fft_len = val / FREQ_MIN;
 	fft_len = fft_len * FFT_SCALE1;
 	double df = (double)val/fft_len;
 	fprintf(stderr, "minimum FFT size: %d samples (df = %.2f Hz)\n", fft_len, df);
