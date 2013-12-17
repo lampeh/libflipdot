@@ -39,11 +39,13 @@
 //#define FREQ_MIN 1000
 
 //#define FREQ_MAX 8000
-//#define FREQ_MAX 10000
+//#define FREQ_MAX 12000
 #define FREQ_MAX 16000
-//#define FREQ_MAX 20000
+//#define FREQ_MAX 24000
 
-#define SCALE 10
+#define LOG_SCALE 10
+#define FFT_SCALE1 1
+#define FFT_SCALE2 2
 
 
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
@@ -128,15 +130,21 @@ int main(void) {
 	// from sndfile-spectrogram:
 	/*
 	**      Choose a speclen value that is long enough to represent frequencies down
-	**      to FREQ_MIN, and then increase it slightly so it is a multiple of 0x40 so that
+	**      to FREQ_MIN, and then increase it slightly so it is a multiple of 64 so that
 	**      FFTW calculations will be quicker.
 	*/
+	// FFT resolution = samplerate / fft_len
+	// align to FFT_WIDTH (two elements ignored)
 	fft_len = FFT_WIDTH * ((val / FREQ_MIN / FFT_WIDTH) + 1);
-//	fft_len = fft_len * 2;
-	fprintf(stderr, "minimum FFT size: %d samples\n", fft_len);
+	fft_len = fft_len * FFT_SCALE1;
+	double df = (double)val/fft_len;
+	fprintf(stderr, "minimum FFT size: %d samples (df = %.2 Hz)\n", fft_len, df);
 
-	fft_len += 0x40 - (fft_len & 0x3f);
-	fprintf(stderr, "aligned FFT size: %d samples\n", fft_len);
+	if (fft_len & 0x3f) {
+		fft_len += 0x40 - (fft_len & 0x3f);
+		df = (double)val/fft_len;
+		fprintf(stderr, "aligned FFT size: %d samples (df = %.2 Hz)\n", fft_len, df);
+	}
 
 	if ((fft_len-2) % FFT_WIDTH != 0) {
 		fprintf(stderr, "warning: (fft_len-2) is not a multiple of FFT_WIDTH (%d %% %d = %d)\n", fft_len-2, FFT_WIDTH, (fft_len-2) % FFT_WIDTH);
@@ -197,7 +205,7 @@ int main(void) {
 
 	memset(rows, 0, sizeof(rows));
 
-	mindB = SCALE * log10(minmag);
+	mindB = LOG_SCALE * log10(minmag);
 //	minmag = pow(10.0, mindB / SCALE);
 
 #ifdef VERBOSE
@@ -253,12 +261,14 @@ int main(void) {
 		last = 1;
 		for (i = 0; i < FFT_WIDTH; i++) {
 			double sum = 0.0;
+			double freq = 0.0;
 			int count = 0;
 			uint16_t rows_new;
 			uint16_t rows_to_0;
 			uint16_t rows_to_1;
 
 			// FFTW "halfcomplex" format
+			// non-redundant half of the complex output
 			// real values in freq_domain[0] ... freq_domain[fft_len/2]
 			// imaginary values in freq_domain[fft_len-1] ... freq_domain[(fft_len/2)+1]
 			// values in freq_domain[0] and freq_domain[fft_len/2] have no imaginary parts
@@ -269,14 +279,17 @@ int main(void) {
 				// magnitude = sqrt(r^2 + i^2)
 				sum += sqrt((freq_domain[last] * freq_domain[last]) +
 						(freq_domain[fft_len - last] * freq_domain[fft_len - last]));
+#ifdef VERBOSE_FULL
+				freq += df * last;
+#endif
 				last++;
 				count++;
 //				fprintf(stderr, "i = %d (%d), last = %d, count = %d\n", i, ((i+1) * (fft_len/2)) / FFT_WIDTH, last, count);
-			} while (last <= ((i+1) * (fft_len/2)) / FFT_WIDTH && last < (fft_len/2));
+			} while (last <= ((i+1) * (fft_len/2/FFT_SCALE2)) / FFT_WIDTH && last < (fft_len/2/FFT_SCALE2));
 
 			// calculate dB and scale to FFT_HEIGHT
 			double mag = MAX(minmag, MIN(maxmag, sum / count));
-			double ydB = SCALE * log10(mag / maxmag);
+			double ydB = LOG_SCALE * log10(mag / maxmag);
 			int bar = MAX(0, MIN(FFT_HEIGHT, (int)round(((ydB / -mindB) * FFT_HEIGHT) + FFT_HEIGHT)));
 
 			// calculate difference pattern for flipdot row register
@@ -289,8 +302,10 @@ int main(void) {
 #ifdef VERBOSE_FULL
 //			fprintf(stderr, "%2d: mag = %3.4f  ydB = %3.4f   \tbar = %2d  rows_new = %5u  rows[i] = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c\e[K\n",
 //				i, mag, ydB, bar, rows_new, rows[i], rows_to_0, rows_to_1, (rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '));
-			fprintf(stderr, "%2d: mag = %3.4f  ydB = %3.4f   \tbar = %2d  %8s  rows_new = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c\e[K\n",
-				i, mag, ydB, bar, bargraph[bar/2], rows_new, rows_to_0, rows_to_1, (rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '));
+			fprintf(stderr, "%2d: mag = %3.4f  ydB = %3.4f   \t"
+				"bar = %2d  %8s  rows_new = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c  %5d Hz\e[K\n",
+				i, mag, ydB, bar, bargraph[bar/2], rows_new, rows_to_0, rows_to_1,
+				(rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '), (int)round(freq / count));
 #endif
 
 			if (rows_to_0) {
@@ -349,8 +364,8 @@ int main(void) {
 
 		tv1 = tv0;
 
-		if (last != (fft_len/2)) {
-			fprintf(stderr, "bug: last != (fft_len/2)-1: %d, %d\n", last, (fft_len/2));
+		if (last != (fft_len/2/FFT_SCALE2)) {
+			fprintf(stderr, "bug: last != (fft_len/2/FFT_SCALE2)-1: %d, %d\n", last, (fft_len/2/FFT_SCALE2));
 #ifndef VERBOSE_FULL
 			fprintf(stderr, "\e[1A");
 #endif
