@@ -169,9 +169,9 @@ int main(void) {
 	}
 
 	if (frames != fft_len) {
-		fprintf(stderr, "warning: alsa period size not aligned with FFT size (%d != %d)\n", frames, fft_len);
+		fprintf(stderr, "warning: alsa period size not aligned with FFT size (%d != %d)\n", (unsigned int)frames, fft_len);
 	}
-	fprintf(stderr, "alsa period size set to %d samples = %d bytes/period\n", frames, size);
+	fprintf(stderr, "alsa period size set to %d samples = %d bytes/period\n", (unsigned int)frames, size);
 
 	fprintf(stderr, "frame window: %.2fms (%.2f fps)\n", ((double)frames / (double)val)*1000, 1/((double)frames / (double)val));
 
