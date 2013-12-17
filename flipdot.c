@@ -403,13 +403,9 @@ flipdot_update_frame(const uint8_t *frame)
 			if (row_changed_to_0 && row_changed_to_1) {
 				flipdot_display_row_diff(rows, cols_to_0, cols_to_1);
 			} else if (row_changed_to_0) {
-				sreg_fill_both(rows, REGISTER_ROWS, cols_to_0, REGISTER_COLS);
-				sreg_strobe();
-				flip_to_0();
+				flipdot_display_row_single(rows, cols_to_0, 0);
 			} else {
-				sreg_fill_both(rows, REGISTER_ROWS, cols_to_1, REGISTER_COLS);
-				sreg_strobe();
-				flip_to_1();
+				flipdot_display_row_single(rows, cols_to_1, 1);
 			}
 		}
 	}
