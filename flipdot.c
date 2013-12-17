@@ -351,7 +351,8 @@ flipdot_update_frame(const uint8_t *frame)
 	uint8_t cols_to_1[REGISTER_COL_BYTE_COUNT];
 	uint8_t *frameptr_old;
 	uint8_t *frameptr_new;
-	uint_fast8_t row_changed;
+	uint_fast8_t row_changed_to_0;
+	uint_fast8_t row_changed_to_1;
 
 	flipdot_frame_t *tmp = frame_old;
 	frame_old = frame_new;
@@ -363,25 +364,40 @@ flipdot_update_frame(const uint8_t *frame)
 	frameptr_new = (uint8_t *)frame_new;
 
 	for (uint_fast16_t row = 0; row < REGISTER_ROWS; row++) {
-		row_changed = 0;
+		row_changed_to_0 = 0;
+		row_changed_to_1 = 0;
 
 		for (uint_fast16_t col = 0; col < REGISTER_COL_BYTE_COUNT; col++) {
 			cols_to_0[col] = ~((*frameptr_old) & ~(*frameptr_new));
 			cols_to_1[col] = (~(*frameptr_old) & (*frameptr_new));
 
-			if (cols_to_0[col] != 0xFF || cols_to_1[col] != 0x00) {
-				row_changed = 1;
+			if (cols_to_0[col] != 0xFF) {
+				row_changed_to_0 = 1;
+			}
+
+			if (cols_to_1[col] != 0x00) {
+				row_changed_to_1 = 1;
 			}
 
 			frameptr_old++;
 			frameptr_new++;
 		}
 
-		if (row_changed) {
+		if (row_changed_to_0 || row_changed_to_1) {
 			memset(rows, 0, sizeof(rows));
 			SETBIT(rows, row);
 
-			flipdot_display_row_diff(rows, cols_to_0, cols_to_1);
+			if (row_changed_to_0 && row_changed_to_1) {
+				flipdot_display_row_diff(rows, cols_to_0, cols_to_1);
+			} else if (row_changed_to_0) {
+				sreg_fill_both(rows, REGISTER_ROWS, cols_to_0, REGISTER_COLS);
+				sreg_strobe();
+				flip_to_0();
+			} else {
+				sreg_fill_both(rows, REGISTER_ROWS, cols_to_1, REGISTER_COLS);
+				sreg_strobe();
+				flip_to_1();
+			}
 		}
 	}
 }
