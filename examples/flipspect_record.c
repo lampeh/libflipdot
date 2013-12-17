@@ -77,7 +77,7 @@ const static double maxmag = 200.0;
 static double mindB;
 
 #ifdef VERBOSE_FULL
-static char bargraph[][9] = {
+static char bargraph[9][9] = {
 	"        ",
 	"X       ",
 	"XX      ",
@@ -261,11 +261,15 @@ int main(void) {
 		last = 1;
 		for (i = 0; i < FFT_WIDTH; i++) {
 			double sum = 0.0;
-			double freq = 0.0;
 			int count = 0;
 			uint16_t rows_new;
 			uint16_t rows_to_0;
 			uint16_t rows_to_1;
+
+#ifdef VERBOSE_FULL
+			double freq_min = last * df - df/2;
+			double freq_max;
+#endif
 
 			// FFTW "halfcomplex" format
 			// non-redundant half of the complex output
@@ -279,13 +283,14 @@ int main(void) {
 				// magnitude = sqrt(r^2 + i^2)
 				sum += sqrt((freq_domain[last] * freq_domain[last]) +
 						(freq_domain[fft_len - last] * freq_domain[fft_len - last]));
-#ifdef VERBOSE_FULL
-				freq += df * last;
-#endif
 				last++;
 				count++;
 //				fprintf(stderr, "i = %d (%d), last = %d, count = %d\n", i, ((i+1) * (fft_len/2)) / FFT_WIDTH, last, count);
 			} while (last <= ((i+1) * (fft_len/2/FFT_SCALE2)) / FFT_WIDTH && last < (fft_len/2/FFT_SCALE2));
+
+#ifdef VERBOSE_FULL
+			freq_max = last * df - df/2;
+#endif
 
 			// calculate dB and scale to FFT_HEIGHT
 			double mag = MAX(minmag, MIN(maxmag, sum / count));
@@ -302,10 +307,10 @@ int main(void) {
 #ifdef VERBOSE_FULL
 //			fprintf(stderr, "%2d: mag = %3.4f  ydB = %3.4f   \tbar = %2d  rows_new = %5u  rows[i] = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c\e[K\n",
 //				i, mag, ydB, bar, rows_new, rows[i], rows_to_0, rows_to_1, (rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '));
-			fprintf(stderr, "%2d: mag = %3.4f  ydB = %3.4f   \t"
-				"bar = %2d  %8s  rows_new = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c  %5d Hz\e[K\n",
+			fprintf(stderr, "%2d: mag = %3.2f  ydB = %3.2f   \t"
+				"bar = %2d  %8s  rows_new = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c  %5d - %5d Hz\e[K\n",
 				i, mag, ydB, bar, bargraph[bar/2], rows_new, rows_to_0, rows_to_1,
-				(rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '), (int)round(freq / count));
+				(rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '), (int)round(freq_min), (int)round(freq_max));
 #endif
 
 			if (rows_to_0) {
