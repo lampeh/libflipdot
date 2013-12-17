@@ -138,12 +138,12 @@ int main(void) {
 	fft_len = 2 + (FFT_WIDTH * ((val / FREQ_MIN / FFT_WIDTH) + 1));
 	fft_len = fft_len * FFT_SCALE1;
 	double df = (double)val/fft_len;
-	fprintf(stderr, "minimum FFT size: %d samples (df = %.2 Hz)\n", fft_len, df);
+	fprintf(stderr, "minimum FFT size: %d samples (df = %.2f Hz)\n", fft_len, df);
 
 	if (fft_len & 0x3f) {
 		fft_len += 0x40 - (fft_len & 0x3f);
 		df = (double)val/fft_len;
-		fprintf(stderr, "aligned FFT size: %d samples (df = %.2 Hz)\n", fft_len, df);
+		fprintf(stderr, "aligned FFT size: %d samples (df = %.2f Hz)\n", fft_len, df);
 	}
 
 	if ((fft_len-2) % FFT_WIDTH != 0) {
