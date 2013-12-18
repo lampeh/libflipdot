@@ -108,7 +108,7 @@ int main(void) {
 	int last;
 
 	/* Open PCM device for recording (capture). */
-	if ((rc = snd_pcm_open(&handle, "hw:1", SND_PCM_STREAM_CAPTURE, 0)) < 0) {
+	if ((rc = snd_pcm_open(&handle, "default", SND_PCM_STREAM_CAPTURE, 0)) < 0) {
 		fprintf(stderr, "unable to open pcm device: %s\n", snd_strerror(rc));
 		exit(1);
 	}
