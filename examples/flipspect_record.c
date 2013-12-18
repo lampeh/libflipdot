@@ -215,10 +215,10 @@ int main(void) {
 #endif
 	int max_changes = 0;
 	struct timeval tv0, tv1, tv2, tv4;
-	double cur_msec1 = 0, cur_msec2 = 0;
-	double cur_msec4 = 0;
-	double max_msec1 = 0, max_msec2 = 0;
-	double max_msec3 = 0, max_msec4 = 0;
+	double cur_usec1 = 0, cur_usec2 = 0;
+	double cur_usec3 = 0, cur_usec4 = 0;
+	double max_usec1 = 0, max_usec2 = 0;
+	double max_usec3 = 0, max_usec4 = 0;
 	gettimeofday(&tv1, NULL);
 #endif
 
@@ -237,7 +237,7 @@ int main(void) {
 			continue;
 		} else if (rc < 0) {
 			fprintf(stderr, "error from read: %s\n", snd_strerror(rc));
-			continue;
+			break;
 		} else if (rc != (int)frames) {
 			fprintf(stderr, "short read, read %d frames\n", rc);
 			memset(time_domain, 0, sizeof(time_domain));
@@ -249,9 +249,10 @@ int main(void) {
 #endif
 		int rows_changed_0 = 0;
 		int rows_changed_1 = 0;
-		cur_msec4 = 0;
+		cur_usec4 = 0;
 #endif
 
+		// convert S16_LE integer samples to floating point
 		for (i = 0; i < rc; i++) {
 			time_domain[i] = (double)buffer[i]/32768;
 //			fprintf(stderr, "%d:\t%d\t%f\n", i, buffer[i], time_domain[i]);
@@ -269,7 +270,6 @@ int main(void) {
 
 #ifdef VERBOSE_FULL
 			double freq_min = last * df - df/2;
-			double freq_max;
 #endif
 
 			// FFTW "halfcomplex" format
@@ -286,12 +286,8 @@ int main(void) {
 						(freq_domain[fft_len - last] * freq_domain[fft_len - last]));
 				last++;
 				count++;
-//				fprintf(stderr, "i = %d (%d), last = %d, count = %d\n", i, ((i+1) * (fft_len/2)) / FFT_WIDTH, last, count);
+//				fprintf(stderr, "i = %d (%d), last = %d, count = %d\n", i, ((i+1) * (fft_len/2/FFT_SCALE2)) / FFT_WIDTH, last, count);
 			} while (last <= ((i+1) * (fft_len/2/FFT_SCALE2)) / FFT_WIDTH && last < (fft_len/2/FFT_SCALE2));
-
-#ifdef VERBOSE_FULL
-			freq_max = last * df - df/2;
-#endif
 
 			// calculate dB and scale to FFT_HEIGHT
 			double mag = MAX(minmag, MIN(maxmag, sum / count));
@@ -306,8 +302,8 @@ int main(void) {
 
 #ifdef VERBOSE
 #ifdef VERBOSE_FULL
-//			fprintf(stderr, "%2d: mag = %3.4f  ydB = %3.4f   \tbar = %2d  rows_new = %5u  rows[i] = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c\e[K\n",
-//				i, mag, ydB, bar, rows_new, rows[i], rows_to_0, rows_to_1, (rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '));
+			double freq_max = last * df - df/2;
+
 			fprintf(stderr, "%2d: mag = %3.2f  ydB = %3.2f   \t"
 				"bar = %2d  %8s  rows_new = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c  %5d - %5d Hz\e[K\n",
 				i, mag, ydB, bar, bargraph[bar/2], rows_new, rows_to_0, rows_to_1,
@@ -344,18 +340,19 @@ int main(void) {
 
 #ifdef VERBOSE
 			gettimeofday(&tv0, NULL);
-			cur_msec4 += ((tv0.tv_sec - tv4.tv_sec)*1000) + ((double)(tv0.tv_usec - tv4.tv_usec)/1000);
+			cur_usec4 += ((tv0.tv_sec*1000000) + tv0.tv_usec) - ((tv4.tv_sec*1000000) + tv4.tv_usec);
 #endif
 		}
 
 #ifdef VERBOSE
-		cur_msec1 = ((tv0.tv_sec - tv1.tv_sec)*1000) + ((double)(tv0.tv_usec - tv1.tv_usec)/1000);
-		cur_msec2 = ((tv0.tv_sec - tv2.tv_sec)*1000) + ((double)(tv0.tv_usec - tv2.tv_usec)/1000);
+		cur_usec1 = ((tv0.tv_sec*1000000) + tv0.tv_usec) - ((tv1.tv_sec*1000000) + tv1.tv_usec);
+		cur_usec2 = ((tv0.tv_sec*1000000) + tv0.tv_usec) - ((tv2.tv_sec*1000000) + tv2.tv_usec);
+		cur_usec3 = cur_usec2 - cur_usec4;
 
-		max_msec1 = MAX(max_msec1, cur_msec1); 
-		max_msec2 = MAX(max_msec2, cur_msec2); 
-		max_msec3 = MAX(max_msec3, cur_msec2 - cur_msec4); 
-		max_msec4 = MAX(max_msec4, cur_msec4); 
+		max_usec1 = MAX(max_usec1, cur_usec1); 
+		max_usec2 = MAX(max_usec2, cur_usec2); 
+		max_usec3 = MAX(max_usec3, cur_usec3); 
+		max_usec4 = MAX(max_usec4, cur_usec4); 
 
 		max_changes = MAX(max_changes, rows_changed_0 + rows_changed_1);
 
@@ -366,7 +363,8 @@ int main(void) {
 				"total frame time: \t%.2fms   \t(max: %.2fms)\n"
 				"time incl. read: \t%.2fms   \t(max: %.2fms)\n",
 				rows_changed_0, rows_changed_1, rows_changed_0 + rows_changed_1, max_changes,
-				cur_msec2 - cur_msec4, max_msec3, cur_msec4, max_msec4, cur_msec2, max_msec2, cur_msec1, max_msec1);
+				cur_usec3/1000, max_usec3/1000, cur_usec4/1000, max_usec4/1000,
+				cur_usec2/1000, max_usec2/1000, cur_usec1/1000, max_usec1/1000);
 
 		tv1 = tv0;
 
