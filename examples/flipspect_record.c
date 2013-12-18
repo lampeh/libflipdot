@@ -15,23 +15,6 @@
 #include <alsa/asoundlib.h>
 #include <fftw3.h>
 
-#include <bcm2835.h>
-#include <flipdot.h>
-
-
-// disable flipdot output for debugging
-#define NOFLIP
-// display timing on stderr for every frame
-#define VERBOSE
-// display state on stderr for every frame
-//#define VERBOSE_FULL
-
-#define FFT_WIDTH DISP_COLS
-#define FFT_HEIGHT DISP_ROWS
-
-#if (FFT_HEIGHT != 16)
-#error "lazy fail: FFT columns use uint16_t. FFT_HEIGHT must be 16"
-#endif
 
 // used in FFT size calculation from sndfile-spectrogram
 //#define FREQ_MIN 20
@@ -46,6 +29,30 @@
 #define LOG_SCALE 10
 #define FFT_SCALE1 1
 #define FFT_SCALE2 1
+
+// disable flipdot output for debugging
+#define NOFLIP
+// display timing on stderr for every frame
+#define VERBOSE
+// display state on stderr for every frame
+//#define VERBOSE_FULL
+
+#define FFT_WIDTH DISP_COLS
+#define FFT_HEIGHT DISP_ROWS
+
+#ifndef NOFLIP
+#include <bcm2835.h>
+#include <flipdot.h>
+#else
+// flipdot.h would define these constants:
+#define DISP_COLS 40
+#define DISP_ROWS 16
+#define REGISTER_COL_BYTE_COUNT 6
+#endif
+
+#if (FFT_HEIGHT != 16)
+#error "lazy fail: FFT columns use uint16_t. FFT_HEIGHT must be 16"
+#endif
 
 
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
