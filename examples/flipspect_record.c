@@ -21,6 +21,7 @@
 #define FREQ_MIN 40
 //#define FREQ_MIN 1000
 
+// requested samplerate = FREQ_MAX * 2
 //#define FREQ_MAX 8000
 //#define FREQ_MAX 12000
 #define FREQ_MAX 16000
@@ -226,7 +227,7 @@ int main(void) {
 	double cur_usec3 = 0, cur_usec4 = 0;
 	double max_usec1 = 0, max_usec2 = 0;
 	double max_usec3 = 0, max_usec4 = 0;
-	gettimeofday(&tv1, NULL);
+	tv1.tv_sec = 0;
 #endif
 
 	while (1) {
@@ -352,16 +353,20 @@ int main(void) {
 		}
 
 #ifdef VERBOSE
-		cur_usec1 = ((tv0.tv_sec*1000000) + tv0.tv_usec) - ((tv1.tv_sec*1000000) + tv1.tv_usec);
+		max_changes = MAX(max_changes, rows_changed_0 + rows_changed_1);
+
+		gettimeofday(&tv0, NULL);
 		cur_usec2 = ((tv0.tv_sec*1000000) + tv0.tv_usec) - ((tv2.tv_sec*1000000) + tv2.tv_usec);
 		cur_usec3 = cur_usec2 - cur_usec4;
 
-		max_usec1 = MAX(max_usec1, cur_usec1); 
-		max_usec2 = MAX(max_usec2, cur_usec2); 
-		max_usec3 = MAX(max_usec3, cur_usec3); 
-		max_usec4 = MAX(max_usec4, cur_usec4); 
+		if (tv1.tv_sec != 0) {
+			cur_usec1 = ((tv0.tv_sec*1000000) + tv0.tv_usec) - ((tv1.tv_sec*1000000) + tv1.tv_usec);
 
-		max_changes = MAX(max_changes, rows_changed_0 + rows_changed_1);
+			max_usec1 = MAX(max_usec1, cur_usec1); 
+			max_usec2 = MAX(max_usec2, cur_usec2); 
+			max_usec3 = MAX(max_usec3, cur_usec3); 
+			max_usec4 = MAX(max_usec4, cur_usec4); 
+		}
 
 		fprintf(stderr, "\n"
 				"flipdot changes: %2d + %2d = %3d (max: %3d)\n"
