@@ -382,15 +382,10 @@ int main(void) {
 
 		if (last != (fft_len/2/FFT_SCALE2)) {
 			fprintf(stderr, "bug: last != (fft_len/2/FFT_SCALE2)-1: %d, %d\n", last, (fft_len/2/FFT_SCALE2));
-#ifndef VERBOSE_FULL
 			fprintf(stderr, "\e[1A");
-#endif
 		}
 
-#ifndef VERBOSE_FULL
 		fprintf(stderr, "\e[6A");
-#endif
-
 #endif
 
 /*
