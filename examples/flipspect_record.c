@@ -184,8 +184,8 @@ int main(void) {
 
 	fprintf(stderr, "frame window: %.2fms (%.2f fps)\n", ((double)frames / (double)val)*1000, 1/((double)frames / (double)val));
 
-	time_domain = fftw_malloc(fft_len * sizeof(double));
-	freq_domain = fftw_malloc(fft_len * sizeof(double));
+	time_domain = fftw_alloc_real(fft_len);
+	freq_domain = fftw_alloc_real(fft_len);
 
 	if (time_domain == NULL || freq_domain == NULL) {
 		fprintf(stderr, "fftw_malloc failed\n");
