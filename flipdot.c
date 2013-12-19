@@ -160,9 +160,19 @@ sreg_fill_both(const uint8_t *row_data, uint_fast16_t row_count, const uint8_t *
 	while (row_count || col_count) {
 
 #ifdef GPIO_MULTI
-		_hw_clr_multi(_BV(ROW_DATA) | _BV(COL_DATA));
-		_hw_set_multi( ((row_count && ISBITSET(row_data, row_count - 1))?(_BV(ROW_DATA)):(0)) |
-						((col_count && ISBITSET(col_data, col_count - 1))?(_BV(COL_DATA)):(0)));
+		uint32_t bits_to_1 = ((row_count && ISBITSET(row_data, row_count - 1))?(_BV(ROW_DATA)):(0)) |
+							((col_count && ISBITSET(col_data, col_count - 1))?(_BV(COL_DATA)):(0));
+
+//		uint32_t bits_to_0 = (~bits_to_1) & (_BV(ROW_DATA) | _BV(COL_DATA));
+		uint32_t bits_to_0 = _BV(ROW_DATA) | _BV(COL_DATA);
+
+		if (bits_to_0) {
+			_hw_clr_multi(bits_to_0);
+		}
+
+		if (bits_to_1) {
+			_hw_set_multi(bits_to_1);
+		}
 #else
 		if (row_count) {
 			if (ISBITSET(row_data, row_count - 1)) {
