@@ -5,12 +5,14 @@
 
 #define ALSA_PCM_NEW_HW_PARAMS_API
 
+#include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
 #include <sys/time.h>
+#include <getopt.h>
 
 #include <alsa/asoundlib.h>
 #include <fftw3.h>
@@ -34,7 +36,7 @@
 // disable flipdot output for debugging
 #define NOFLIP
 // display timing on stderr for every frame
-#define VERBOSE
+//#define VERBOSE
 // display state on stderr for every frame
 //#define VERBOSE_FULL
 
@@ -84,7 +86,6 @@ const static double minmag = 0.01;
 const static double maxmag = 200.0;
 static double mindB;
 
-#ifdef VERBOSE_FULL
 static char bargraph[9][9] = {
 	"        ",
 	"X       ",
@@ -96,9 +97,19 @@ static char bargraph[9][9] = {
 	"XXXXXXX ",
 	"XXXXXXXX"
 };
-#endif
+		
+static unsigned int verbose = 0;
+static unsigned int max_changes = 0;
+static unsigned int rows_changed_0;
+static unsigned int rows_changed_1;
+static struct timeval tv0, tv1, tv2, tv4;
+static double cur_usec1, cur_usec2;
+static double cur_usec3, cur_usec4;
+static double max_usec1 = 0, max_usec2 = 0;
+static double max_usec3 = 0, max_usec4 = 0;
 
-int main(void) {
+
+int main(int argc, char **argv) {
 	int rc;
 	unsigned int val;
 	unsigned int fft_len;
@@ -106,9 +117,37 @@ int main(void) {
 	int size;
 	int i;
 	int last;
+	char *device = NULL;
+
+           
+	static struct option long_options[] = {
+		{"verbose", no_argument, NULL, 'v'},
+		{"device", required_argument, 0, 'd'},
+		{0, 0, 0, 0}
+	};
+	int options_index = 0;
+
+	while ((rc = getopt_long(argc, argv, "vd:", long_options, &options_index)) != -1) {
+		switch(rc) {
+			case 'v':
+				verbose++;
+				break;
+			case 'd':
+				device = optarg;
+				break;
+			case '?':
+				return 1;
+			default:
+				break;
+		}
+	}
+
+	if (device == NULL) {
+		device = "default";
+	}
 
 	/* Open PCM device for recording (capture). */
-	if ((rc = snd_pcm_open(&handle, "default", SND_PCM_STREAM_CAPTURE, 0)) < 0) {
+	if ((rc = snd_pcm_open(&handle, device, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
 		fprintf(stderr, "unable to open pcm device: %s\n", snd_strerror(rc));
 		exit(1);
 	}
@@ -217,26 +256,20 @@ int main(void) {
 	mindB = LOG_SCALE * log10(minmag);
 //	minmag = pow(10.0, mindB / SCALE);
 
-#ifdef VERBOSE
-#ifdef VERBOSE_FULL
-	fprintf(stderr, "\e[H\e[2J");
-#endif
-	int max_changes = 0;
-	struct timeval tv0, tv1, tv2, tv4;
-	double cur_usec1 = 0, cur_usec2 = 0;
-	double cur_usec3 = 0, cur_usec4 = 0;
-	double max_usec1 = 0, max_usec2 = 0;
-	double max_usec3 = 0, max_usec4 = 0;
-	tv1.tv_sec = 0;
-#endif
+	if (verbose) {
+		if (verbose > 1) {
+			fprintf(stderr, "\e[H\e[2J");
+		}
+		tv1.tv_sec = 0;
+	}
 
 	while (1) {
 
 		rc = snd_pcm_readi(handle, buffer, frames);
 
-#ifdef VERBOSE
-		gettimeofday(&tv2, NULL);
-#endif
+		if (verbose) {
+			gettimeofday(&tv2, NULL);
+		}
 
 		if (rc == -EPIPE) {
 			/* EPIPE means overrun */
@@ -251,14 +284,14 @@ int main(void) {
 			memset(time_domain, 0, sizeof(time_domain));
 		}
 
-#ifdef VERBOSE
-#ifdef VERBOSE_FULL
-		fprintf(stderr, "\e[H");
-#endif
-		int rows_changed_0 = 0;
-		int rows_changed_1 = 0;
-		cur_usec4 = 0;
-#endif
+		if (verbose) {
+			if (verbose > 1) {
+				fprintf(stderr, "\e[H");
+			}
+			rows_changed_0 = 0;
+			rows_changed_1 = 0;
+			cur_usec4 = 0;
+		}
 
 		// convert S16_LE integer samples to floating point
 		for (i = 0; i < rc; i++) {
@@ -275,10 +308,11 @@ int main(void) {
 			uint16_t rows_new;
 			uint16_t rows_to_0;
 			uint16_t rows_to_1;
+			double freq_min, freq_max;
 
-#ifdef VERBOSE_FULL
-			double freq_min = last * df - df/2;
-#endif
+			if (verbose > 1) {
+				freq_min = last * df - df/2;
+			}
 
 			// FFTW "halfcomplex" format
 			// non-redundant half of the complex output
@@ -308,25 +342,25 @@ int main(void) {
 			rows_to_1 = (~(rows[i]) & (rows_new));
 			rows[i] = rows_new;
 
-#ifdef VERBOSE
-#ifdef VERBOSE_FULL
-			double freq_max = last * df - df/2;
+			if (verbose) {
+				if (verbose > 1) {
+					freq_max = last * df - df/2;
 
-			fprintf(stderr, "%2d: mag = %3.2f  ydB = %3.2f   \t"
-				"bar = %2d  %8s  rows_new = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c  %5d - %5d Hz\e[K\n",
-				i, mag, ydB, bar, bargraph[bar/2], rows_new, rows_to_0, rows_to_1,
-				(rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '), (int)round(freq_min), (int)round(freq_max));
-#endif
+					fprintf(stderr, "%2d: mag = %3.2f  ydB = %3.2f   \t"
+						"bar = %2d  %8s  rows_new = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c  %5d - %5d Hz\e[K\n",
+						i, mag, ydB, bar, bargraph[bar/2], rows_new, rows_to_0, rows_to_1,
+						(rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '), (int)round(freq_min), (int)round(freq_max));
+				}
 
-			if (rows_to_0) {
-				rows_changed_0++;
+				if (rows_to_0) {
+					rows_changed_0++;
+				}
+				if (rows_to_1) {
+					rows_changed_1++;
+				}
+
+				gettimeofday(&tv4, NULL);
 			}
-			if (rows_to_1) {
-				rows_changed_1++;
-			}
-
-			gettimeofday(&tv4, NULL);
-#endif
 
 #ifndef NOFLIP
 			// https://wiki.attraktor.org/FlipdotDisplay#Logisch
@@ -346,47 +380,47 @@ int main(void) {
 			}
 #endif
 
-#ifdef VERBOSE
+			if (verbose) {
+				gettimeofday(&tv0, NULL);
+				cur_usec4 += ((tv0.tv_sec*1000000) + tv0.tv_usec) - ((tv4.tv_sec*1000000) + tv4.tv_usec);
+			}
+		}
+
+		if (verbose) {
+			max_changes = MAX(max_changes, rows_changed_0 + rows_changed_1);
+
 			gettimeofday(&tv0, NULL);
-			cur_usec4 += ((tv0.tv_sec*1000000) + tv0.tv_usec) - ((tv4.tv_sec*1000000) + tv4.tv_usec);
-#endif
+			cur_usec2 = ((tv0.tv_sec*1000000) + tv0.tv_usec) - ((tv2.tv_sec*1000000) + tv2.tv_usec);
+			cur_usec3 = cur_usec2 - cur_usec4;
+
+			if (tv1.tv_sec != 0) {
+				cur_usec1 = ((tv0.tv_sec*1000000) + tv0.tv_usec) - ((tv1.tv_sec*1000000) + tv1.tv_usec);
+
+				max_usec1 = MAX(max_usec1, cur_usec1); 
+				max_usec2 = MAX(max_usec2, cur_usec2); 
+				max_usec3 = MAX(max_usec3, cur_usec3); 
+				max_usec4 = MAX(max_usec4, cur_usec4); 
+			}
+
+			fprintf(stderr, "\n"
+					"flipdot changes: %2d + %2d = %3d (max: %3d)\n"
+					"frame processed in \t%.2fms   \t(max: %.2fms)\n"
+					"frame displayed in \t%.2fms   \t(max: %.2fms)\n"
+					"total frame time: \t%.2fms   \t(max: %.2fms)\n"
+					"time incl. read: \t%.2fms   \t(max: %.2fms)\n",
+					rows_changed_0, rows_changed_1, rows_changed_0 + rows_changed_1, max_changes,
+					cur_usec3/1000, max_usec3/1000, cur_usec4/1000, max_usec4/1000,
+					cur_usec2/1000, max_usec2/1000, cur_usec1/1000, max_usec1/1000);
+
+			tv1 = tv0;
+
+			if (last != (fft_len/2/FFT_SCALE2)) {
+				fprintf(stderr, "bug: last != (fft_len/2/FFT_SCALE2)-1: %d, %d\n", last, (fft_len/2/FFT_SCALE2));
+				fprintf(stderr, "\e[1A");
+			}
+
+			fprintf(stderr, "\e[6A");
 		}
-
-#ifdef VERBOSE
-		max_changes = MAX(max_changes, rows_changed_0 + rows_changed_1);
-
-		gettimeofday(&tv0, NULL);
-		cur_usec2 = ((tv0.tv_sec*1000000) + tv0.tv_usec) - ((tv2.tv_sec*1000000) + tv2.tv_usec);
-		cur_usec3 = cur_usec2 - cur_usec4;
-
-		if (tv1.tv_sec != 0) {
-			cur_usec1 = ((tv0.tv_sec*1000000) + tv0.tv_usec) - ((tv1.tv_sec*1000000) + tv1.tv_usec);
-
-			max_usec1 = MAX(max_usec1, cur_usec1); 
-			max_usec2 = MAX(max_usec2, cur_usec2); 
-			max_usec3 = MAX(max_usec3, cur_usec3); 
-			max_usec4 = MAX(max_usec4, cur_usec4); 
-		}
-
-		fprintf(stderr, "\n"
-				"flipdot changes: %2d + %2d = %3d (max: %3d)\n"
-				"frame processed in \t%.2fms   \t(max: %.2fms)\n"
-				"frame displayed in \t%.2fms   \t(max: %.2fms)\n"
-				"total frame time: \t%.2fms   \t(max: %.2fms)\n"
-				"time incl. read: \t%.2fms   \t(max: %.2fms)\n",
-				rows_changed_0, rows_changed_1, rows_changed_0 + rows_changed_1, max_changes,
-				cur_usec3/1000, max_usec3/1000, cur_usec4/1000, max_usec4/1000,
-				cur_usec2/1000, max_usec2/1000, cur_usec1/1000, max_usec1/1000);
-
-		tv1 = tv0;
-
-		if (last != (fft_len/2/FFT_SCALE2)) {
-			fprintf(stderr, "bug: last != (fft_len/2/FFT_SCALE2)-1: %d, %d\n", last, (fft_len/2/FFT_SCALE2));
-			fprintf(stderr, "\e[1A");
-		}
-
-		fprintf(stderr, "\e[6A");
-#endif
 
 /*
 		if (rc = write(1, buffer, size) != size) {
