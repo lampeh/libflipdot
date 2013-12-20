@@ -337,7 +337,7 @@ int main(int argc, char **argv) {
 			break;
 		} else if (rc != (int)frames) {
 			fprintf(stderr, "short read, read %d frames\n", rc);
-			memset(time_domain, 0, sizeof(time_domain));
+			memset(time_domain, 0, fft_len * sizeof(double));
 		}
 
 		if (verbose) {
