@@ -52,7 +52,6 @@
 // flipdot.h would define these constants:
 #define DISP_COLS 40
 #define DISP_ROWS 16
-#define REGISTER_COL_BYTE_COUNT 6
 #endif
 
 #define FFT_WIDTH DISP_COLS
@@ -80,9 +79,12 @@ static fftw_plan plan;
 static double *time_domain;
 static double *freq_domain;
 
+#ifndef NOFLIP
 // FFT columns are displayed by setting bits in the flipdot row register
 // and selecting only a single column in the col register.
 static uint8_t cols[REGISTER_COL_BYTE_COUNT];
+#endif
+
 // keep the last values to calculate the difference
 static uint16_t rows[FFT_WIDTH];
 
