@@ -35,10 +35,6 @@
 
 // disable flipdot output for debugging
 #define NOFLIP
-// display timing on stderr for every frame
-//#define VERBOSE
-// display state on stderr for every frame
-//#define VERBOSE_FULL
 
 #define FFT_WIDTH DISP_COLS
 #define FFT_HEIGHT DISP_ROWS
@@ -109,6 +105,16 @@ static double max_usec1 = 0, max_usec2 = 0;
 static double max_usec3 = 0, max_usec4 = 0;
 
 
+void usage(void) {
+	fprintf(stderr, "Flipdot Spectrum Analyzer\n"
+			"Usage:\n"
+			"-h       | --help           This text\n"
+			"-v       | --verbose        Display timing on stderr for every frame\n"
+			"                            Use twice for debug output\n"
+            "-d <dev> | --device <dev>   ALSA input device name (e.g.: \"hw:1\")\n"
+			"\n");
+}
+
 int main(int argc, char **argv) {
 	int rc;
 	unsigned int val;
@@ -123,11 +129,12 @@ int main(int argc, char **argv) {
 	static struct option long_options[] = {
 		{"verbose", no_argument, NULL, 'v'},
 		{"device", required_argument, 0, 'd'},
+		{"help", no_argument, 0, 'h'},
 		{0, 0, 0, 0}
 	};
 	int options_index = 0;
 
-	while ((rc = getopt_long(argc, argv, "vd:", long_options, &options_index)) != -1) {
+	while ((rc = getopt_long(argc, argv, "vd:h", long_options, &options_index)) != -1) {
 		switch(rc) {
 			case 'v':
 				verbose++;
@@ -135,8 +142,10 @@ int main(int argc, char **argv) {
 			case 'd':
 				device = optarg;
 				break;
+			case 'h':
 			case '?':
-				return 1;
+				usage();
+				return 2;
 			default:
 				break;
 		}
