@@ -97,6 +97,7 @@ static char bargraph[9][9] = {
 };
 		
 static unsigned int verbose = 0;
+static unsigned int noflip = 0;
 static unsigned int max_changes = 0;
 static unsigned int rows_changed_0;
 static unsigned int rows_changed_1;
@@ -118,6 +119,8 @@ void usage(void) {
 			"-i <val> | --minmag <val>   Set lower magnitude limit\n"
 			"-s <val> | --scale <val>    Divide FFT frequency range\n"
 			"                            (e.g: 2 = display half frequency range)\n"
+			"-n       | --no-flip        Don't update flipdot display\n"
+			"         | --dry-run\n"
 			"\n");
 }
 
@@ -139,6 +142,8 @@ int main(int argc, char **argv) {
 		{"maxmag", required_argument, 0, 'm'},
 		{"minmag", required_argument, 0, 'i'},
 		{"scale", required_argument, 0, 's'},
+		{"no-flip", no_argument, 0, 'n'},
+		{"dry-run", no_argument, 0, 'n'},
 		{0, 0, 0, 0}
 	};
 	int options_index = 0;
@@ -159,6 +164,9 @@ int main(int argc, char **argv) {
 				break;
 			case 's':
 				fft_scale2 = atoi(optarg);
+				break;
+			case 'n':
+				noflip = 1;
 				break;
 			case 'h':
 			case '?':
@@ -269,13 +277,15 @@ int main(int argc, char **argv) {
 	fputc('\n', stderr);
 
 #ifndef NOFLIP
-	if (!bcm2835_init()) {
-		fprintf(stderr, "bcm2835_init failed\n");
-		exit(1);
-	}
+	if (!noflip) {
+		if (!bcm2835_init()) {
+			fprintf(stderr, "bcm2835_init failed\n");
+			exit(1);
+		}
 
-	flipdot_init();
-	flipdot_clear_to_0();
+		flipdot_init();
+		flipdot_clear_to_0();
+	}
 #endif
 
 	memset(rows, 0, sizeof(rows));
@@ -397,20 +407,22 @@ int main(int argc, char **argv) {
 			}
 
 #ifndef NOFLIP
-			// https://wiki.attraktor.org/FlipdotDisplay#Logisch
+			if (!noflip) {
+				// https://wiki.attraktor.org/FlipdotDisplay#Logisch
 
-			// black -> white (OE0)
-			if (rows_to_0) {
-				memset(cols, 0xFF, sizeof(cols));
-				CLEARBIT(cols, i + ((i / MODULE_COLS) * COL_GAP));
-				flipdot_display_row_single((uint8_t *)&rows_to_0, cols, 0);
-			}
+				// black -> white (OE0)
+				if (rows_to_0) {
+					memset(cols, 0xFF, sizeof(cols));
+					CLEARBIT(cols, i + ((i / MODULE_COLS) * COL_GAP));
+					flipdot_display_row_single((uint8_t *)&rows_to_0, cols, 0);
+				}
 
-			// white -> black (OE1)
-			if (rows_to_1) {
-				memset(cols, 0x00, sizeof(cols));
-				SETBIT(cols, i + ((i / MODULE_COLS) * COL_GAP));
-				flipdot_display_row_single((uint8_t *)&rows_to_1, cols, 1);
+				// white -> black (OE1)
+				if (rows_to_1) {
+					memset(cols, 0x00, sizeof(cols));
+					SETBIT(cols, i + ((i / MODULE_COLS) * COL_GAP));
+					flipdot_display_row_single((uint8_t *)&rows_to_1, cols, 1);
+				}
 			}
 #endif
 
@@ -464,7 +476,9 @@ int main(int argc, char **argv) {
 	}
 
 #ifndef NOFLIP
-	flipdot_shutdown();
+	if (!noflip) {
+		flipdot_shutdown();
+	}
 #endif
 
 	snd_pcm_drain(handle);
