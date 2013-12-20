@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
 	};
 	int options_index = 0;
 
-	while ((rc = getopt_long(argc, argv, "hvnd:m:i:s:", long_options, &options_index)) != -1) {
+	while ((rc = getopt_long(argc, argv, "hvd:m:i:s:n", long_options, &options_index)) != -1) {
 		switch(rc) {
 			case 'v':
 				verbose++;
@@ -180,6 +180,7 @@ int main(int argc, char **argv) {
 	if (device == NULL) {
 		device = "default";
 	}
+
 
 	/* Open PCM device for recording (capture). */
 	if ((rc = snd_pcm_open(&handle, device, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
@@ -258,6 +259,7 @@ int main(int argc, char **argv) {
 
 	fprintf(stderr, "frame window: %.2fms (%.2f fps)\n", ((double)frames / (double)val)*1000, 1/((double)frames / (double)val));
 
+
 	time_domain = fftw_alloc_real(fft_len);
 	freq_domain = fftw_alloc_real(fft_len);
 
@@ -276,6 +278,7 @@ int main(int argc, char **argv) {
 	fftw_fprint_plan(plan, stderr);
 	fputc('\n', stderr);
 
+
 #ifndef NOFLIP
 	if (!noflip) {
 		if (!bcm2835_init()) {
@@ -288,10 +291,6 @@ int main(int argc, char **argv) {
 	}
 #endif
 
-	memset(rows, 0, sizeof(rows));
-
-	mindB = LOG_SCALE * log10(minmag);
-//	minmag = pow(10.0, mindB / SCALE);
 
 	if (verbose) {
 		if (verbose > 1) {
@@ -300,13 +299,15 @@ int main(int argc, char **argv) {
 		tv1.tv_sec = 0;
 	}
 
+	memset(rows, 0, sizeof(rows));
+
+	mindB = LOG_SCALE * log10(minmag);
+//	minmag = pow(10.0, mindB / SCALE);
+
+
 	while (1) {
 
 		rc = snd_pcm_readi(handle, buffer, frames);
-
-		if (verbose) {
-			gettimeofday(&tv2, NULL);
-		}
 
 		if (rc == -EPIPE) {
 			/* EPIPE means overrun */
@@ -322,6 +323,21 @@ int main(int argc, char **argv) {
 		}
 
 		if (verbose) {
+			gettimeofday(&tv2, NULL);
+		}
+
+
+		// convert S16_LE integer samples to floating point
+		for (i = 0; i < rc; i++) {
+			time_domain[i] = (double)buffer[i]/32768;
+//			fprintf(stderr, "%d:\t%d\t%f\n", i, buffer[i], time_domain[i]);
+		}
+
+		// execute transformation from time_domain to freq_domain
+		fftw_execute (plan) ;
+
+
+		if (verbose) {
 			if (verbose > 1) {
 				fprintf(stderr, "\e[H");
 			}
@@ -330,15 +346,10 @@ int main(int argc, char **argv) {
 			cur_usec4 = 0;
 		}
 
-		// convert S16_LE integer samples to floating point
-		for (i = 0; i < rc; i++) {
-			time_domain[i] = (double)buffer[i]/32768;
-//			fprintf(stderr, "%d:\t%d\t%f\n", i, buffer[i], time_domain[i]);
-		}
-
-		fftw_execute (plan) ;
-
+		// skip first element in freq_domain
 		last = 1;
+
+
 		for (i = 0; i < FFT_WIDTH; i++) {
 			double sum = 0.0;
 			int count = 0;
@@ -350,6 +361,7 @@ int main(int argc, char **argv) {
 			if (verbose > 1) {
 				freq_min = last * df - df/2;
 			}
+
 
 			// FFTW "halfcomplex" format
 			// non-redundant half of the complex output
@@ -375,6 +387,7 @@ int main(int argc, char **argv) {
 				continue;
 			}
 
+
 			// calculate dB and scale to FFT_HEIGHT
 			double mag = MAX(minmag, MIN(maxmag, sum / count));
 			double ydB = LOG_SCALE * log10(mag / maxmag);
@@ -385,6 +398,7 @@ int main(int argc, char **argv) {
 			rows_to_0 = ((rows[i]) & ~(rows_new));
 			rows_to_1 = (~(rows[i]) & (rows_new));
 			rows[i] = rows_new;
+
 
 			if (verbose) {
 				if (verbose > 1) {
@@ -406,6 +420,7 @@ int main(int argc, char **argv) {
 				gettimeofday(&tv4, NULL);
 			}
 
+
 #ifndef NOFLIP
 			if (!noflip) {
 				// https://wiki.attraktor.org/FlipdotDisplay#Logisch
@@ -426,11 +441,13 @@ int main(int argc, char **argv) {
 			}
 #endif
 
+
 			if (verbose) {
 				gettimeofday(&tv0, NULL);
 				cur_usec4 += ((tv0.tv_sec*1000000) + tv0.tv_usec) - ((tv4.tv_sec*1000000) + tv4.tv_usec);
 			}
 		}
+
 
 		if (verbose) {
 			max_changes = MAX(max_changes, rows_changed_0 + rows_changed_1);
@@ -468,12 +485,14 @@ int main(int argc, char **argv) {
 			fprintf(stderr, "\e[6A");
 		}
 
+
 /*
 		if (rc = write(1, buffer, size) != size) {
 			fprintf(stderr, "short write: wrote %d bytes\n", rc);
 		}
 */
 	}
+
 
 #ifndef NOFLIP
 	if (!noflip) {
