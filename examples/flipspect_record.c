@@ -120,7 +120,7 @@ void usage(void) {
 			"-s <val> | --scale <val>    Divide FFT frequency range\n"
 			"                            (e.g: 2 = display half frequency range)\n"
 			"-n       | --no-flip        Don't update flipdot display\n"
-			"         | --dry-run\n"
+			"           --dry-run\n"
 			"\n");
 }
 
@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
 	};
 	int options_index = 0;
 
-	while ((rc = getopt_long(argc, argv, "hvdn:m:i:s:", long_options, &options_index)) != -1) {
+	while ((rc = getopt_long(argc, argv, "hvnd:m:i:s:", long_options, &options_index)) != -1) {
 		switch(rc) {
 			case 'v':
 				verbose++;
@@ -390,7 +390,7 @@ int main(int argc, char **argv) {
 				if (verbose > 1) {
 					freq_max = last * df - df/2;
 
-					fprintf(stderr, "%2d: mag = %3.2f  ydB = %3.2f   \t"
+					fprintf(stderr, "%2d: mag = %3.2f  ydB = %3.2f  \t"
 						"bar = %2d  %8s  rows_new = %5u  rows_to_0 = %5u  rows_to_1 = %5u  %c%c  %5d - %5d Hz\e[K\n",
 						i, mag, ydB, bar, bargraph[bar/2], rows_new, rows_to_0, rows_to_1,
 						(rows_to_0)?('X'):(' '), (rows_to_1)?('X'):(' '), (int)round(freq_min), (int)round(freq_max));
