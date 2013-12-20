@@ -397,7 +397,7 @@ int main(int argc, char **argv) {
 			}
 
 			if (count == 0) {
-				if (verbose) {
+				if (verbose > 1) {
 					fprintf(stderr, "bug: no data for index %d\n", i);
 				}
 				continue;
