@@ -31,7 +31,7 @@
 
 #define LOG_SCALE 10
 #define FFT_SCALE1 1
-#define FFT_SCALE2 1
+#define FFT_SCALE2 2
 
 // disable flipdot output for debugging
 #define NOFLIP
