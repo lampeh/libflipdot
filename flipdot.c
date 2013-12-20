@@ -127,30 +127,69 @@ sreg_strobe(void)
 }
 
 static void
+sreg_col_clk(void) {
+	_hw_set(COL_CLK);
+
+#ifndef NOSLEEP
+	_nanosleep(CLK_DELAY);
+#endif
+
+	_hw_clr(COL_CLK);
+
+#ifndef NOSLEEP
+//	_nanosleep(CLK_DELAY);
+#endif
+}
+
+static void
+sreg_col_shift_0(void) {
+	_hw_clr(COL_DATA);
+
+#ifndef NOSLEEP
+	_nanosleep(DATA_DELAY);
+#endif
+
+	sreg_col_clk();
+}
+
+static void
+sreg_col_shift_1(void) {
+	_hw_set(COL_DATA);
+
+#ifndef NOSLEEP
+	_nanosleep(DATA_DELAY);
+#endif
+
+	sreg_col_clk();
+}
+
+static void
 sreg_fill_col(const uint8_t *col_data, uint_fast16_t col_count)
 {
-	while (col_count--) {
-		if (ISBITSET(col_data, col_count)) {
-			_hw_set(COL_DATA);
+	uint_fast16_t i, j;
+	uint32_t c;
+
+	c = ((uint16_t *)col_data)[col_count >> 4];
+	j = col_count & 0x0f;
+	while (j--) {
+		if (c & (1 << j)) {
+			sreg_col_shift_1();
 		} else {
-			_hw_clr(COL_DATA);
+			sreg_col_shift_0();
 		}
+	}
 
-#ifndef NOSLEEP
-		_nanosleep(DATA_DELAY);
-#endif
-
-		_hw_set(COL_CLK);
-
-#ifndef NOSLEEP
-		_nanosleep(CLK_DELAY);
-#endif
-
-		_hw_clr(COL_CLK);
-
-#ifndef NOSLEEP
-//		_nanosleep(CLK_DELAY);
-#endif
+	i = col_count >> 4;
+	while (i--) {
+		c = ((uint16_t *)col_data)[i];
+		j = 16;
+		while (j--) {
+			if (c & (1 << j)) {
+				sreg_col_shift_1();
+			} else {
+				sreg_col_shift_0();
+			}
+		}
 	}
 }
 
