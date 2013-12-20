@@ -19,15 +19,15 @@
 
 
 // used in FFT size calculation from sndfile-spectrogram
-//#define FREQ_MIN 20
-#define FREQ_MIN 40
+#define FREQ_MIN 25
+//#define FREQ_MIN 40
 //#define FREQ_MIN 1000
 
 // requested samplerate = FREQ_MAX * 2
 //#define FREQ_MAX 8000
 //#define FREQ_MAX 12000
-#define FREQ_MAX 16000
-//#define FREQ_MAX 24000
+//#define FREQ_MAX 16000
+#define FREQ_MAX 24000
 
 #define LOG_SCALE 10
 #define FFT_SCALE1 1
