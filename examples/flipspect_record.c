@@ -28,17 +28,6 @@
 #include <fftw3.h>
 
 
-// used in FFT size calculation from sndfile-spectrogram
-#define FREQ_MIN 25
-//#define FREQ_MIN 40
-//#define FREQ_MIN 1000
-
-// requested samplerate = FREQ_MAX * 2
-//#define FREQ_MAX 8000
-//#define FREQ_MAX 12000
-//#define FREQ_MAX 16000
-#define FREQ_MAX 24000
-
 #define LOG_SCALE 10
 #define FFT_SCALE1 1
 
@@ -111,6 +100,9 @@ static char bargraph[9][9] = {
 static unsigned int verbose = 0;
 static unsigned int verbose_n = 1;
 static unsigned int noflip = 0;
+static unsigned int samplerate = 48000;
+static unsigned int fft_res = 25;
+
 static unsigned int max_changes = 0;
 static unsigned int rows_changed_0;
 static unsigned int rows_changed_1;
@@ -135,6 +127,8 @@ void usage(void) {
 			"                                (e.g: 2 = display half frequency range)\n"
 			"-n       | --no-flip            Don't update flipdot display\n"
 			"           --dry-run\n"
+			"-r <val> | --rate <val>         Set samplerate\n"
+			"-f <val> | --freq <val>         Set FFT bin resolution\n"
 			"\n");
 }
 
@@ -158,11 +152,13 @@ int main(int argc, char **argv) {
 		{"scale", required_argument, 0, 's'},
 		{"no-flip", no_argument, 0, 'n'},
 		{"dry-run", no_argument, 0, 'n'},
+		{"rate", required_argument, 0, 'r'},
+		{"freq", required_argument, 0, 'f'},
 		{0, 0, 0, 0}
 	};
 	int options_index = 0;
 
-	while ((rc = getopt_long(argc, argv, "hve:d:m:i:s:n", long_options, &options_index)) != -1) {
+	while ((rc = getopt_long(argc, argv, "d:e:f:hi:m:nr:s:v", long_options, &options_index)) != -1) {
 		switch(rc) {
 			case 'v':
 				verbose++;
@@ -184,6 +180,12 @@ int main(int argc, char **argv) {
 				break;
 			case 'n':
 				noflip = 1;
+				break;
+			case 'r':
+				samplerate = atoi(optarg);
+				break;
+			case 'f':
+				fft_res = atoi(optarg);
 				break;
 			case 'h':
 			case '?':
@@ -223,9 +225,9 @@ int main(int argc, char **argv) {
 	snd_pcm_hw_params_set_channels(handle, params, 1);
 
 	/* Sampling rate */
-	val = FREQ_MAX * 2;
+	val = samplerate;
 	snd_pcm_hw_params_set_rate_near(handle, params, &val, NULL);
-	fprintf (stderr, "samplerate set to: %d (requested: %d)\n", val, FREQ_MAX * 2);
+	fprintf (stderr, "samplerate set to: %u (requested: %d)\n", val, samplerate);
 
 	// from sndfile-spectrogram:
 	/*
@@ -236,19 +238,19 @@ int main(int argc, char **argv) {
 	// FFT resolution = samplerate / fft_len
 	// align to FFT_WIDTH (two elements ignored)
 	//fft_len = 2 + (FFT_WIDTH * ((val / FREQ_MIN / FFT_WIDTH) + 1));
-	fft_len = val / FREQ_MIN;
+	fft_len = val / fft_res;
 	fft_len = fft_len * FFT_SCALE1;
 	double df = (double)val/fft_len;
-	fprintf(stderr, "minimum FFT size: %d samples (df = %.2f Hz)\n", fft_len, df);
+	fprintf(stderr, "minimum FFT size: %u samples (df = %.2f Hz)\n", fft_len, df);
 
 	if (fft_len & 0x3f) {
 		fft_len += 0x40 - (fft_len & 0x3f);
 		df = (double)val/fft_len;
-		fprintf(stderr, "aligned FFT size: %d samples (df = %.2f Hz)\n", fft_len, df);
+		fprintf(stderr, "aligned FFT size: %u samples (df = %.2f Hz)\n", fft_len, df);
 	}
 
 	if ((fft_len-2) % FFT_WIDTH != 0) {
-		fprintf(stderr, "warning: (fft_len-2) is not a multiple of FFT_WIDTH (%d %% %d = %d)\n", fft_len-2, FFT_WIDTH, (fft_len-2) % FFT_WIDTH);
+		fprintf(stderr, "warning: (fft_len-2) is not a multiple of FFT_WIDTH (%u %% %u = %u)\n", fft_len-2, FFT_WIDTH, (fft_len-2) % FFT_WIDTH);
 	}
 
 	/* Set period size */
@@ -270,9 +272,9 @@ int main(int argc, char **argv) {
 	}
 
 	if (frames != fft_len) {
-		fprintf(stderr, "warning: alsa period size not aligned with FFT size (%d != %d)\n", (unsigned int)frames, fft_len);
+		fprintf(stderr, "warning: alsa period size not aligned with FFT size (%u != %u)\n", (unsigned int)frames, fft_len);
 	}
-	fprintf(stderr, "alsa period size set to %d samples = %d bytes/period\n", (unsigned int)frames, size);
+	fprintf(stderr, "alsa period size set to %u samples = %u bytes/period\n", (unsigned int)frames, size);
 
 	fprintf(stderr, "frame window: %.2fms (%.2f fps)\n", ((double)frames / (double)val)*1000, 1/((double)frames / (double)val));
 
@@ -400,7 +402,7 @@ int main(int argc, char **argv) {
 
 			if (count == 0) {
 				if (verbose > 1 && (vi % verbose_n) == 0) {
-					fprintf(stderr, "bug: no data for index %d\n", i);
+					fprintf(stderr, "bug: no data for index %u\n", i);
 				}
 				continue;
 			}
@@ -496,7 +498,7 @@ int main(int argc, char **argv) {
 			tv1 = tv0;
 
 			if (last != (fft_len/2/fft_scale2)) {
-				fprintf(stderr, "bug: last != (fft_len/2/fft_scale2)-1: %d, %d\n", last, (fft_len/2/fft_scale2));
+				fprintf(stderr, "bug: last != (fft_len/2/fft_scale2)-1: %u, %u\n", last, (fft_len/2/fft_scale2));
 				fprintf(stderr, "\e[1A");
 			}
 
