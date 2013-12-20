@@ -78,8 +78,8 @@ static uint8_t cols[REGISTER_COL_BYTE_COUNT];
 static uint16_t rows[FFT_WIDTH];
 
 // limit the range of magnitude to display
-const static double minmag = 0.01;
-const static double maxmag = 200.0;
+static double minmag = 0.01;
+static double maxmag = 200.0;
 static double mindB;
 
 static char bargraph[9][9] = {
@@ -112,6 +112,8 @@ void usage(void) {
 			"-v       | --verbose        Display timing on stderr for every frame\n"
 			"                            Use twice for debug output\n"
             "-d <dev> | --device <dev>   ALSA input device name (e.g.: \"hw:1\")\n"
+			"-m <val> | --maxmag <val>   Set upper magnitude limit\n"
+			"-i <val> | --minmag <val>   Set lower magnitude limit\n"
 			"\n");
 }
 
@@ -127,20 +129,28 @@ int main(int argc, char **argv) {
 
            
 	static struct option long_options[] = {
+		{"help", no_argument, 0, 'h'},
 		{"verbose", no_argument, NULL, 'v'},
 		{"device", required_argument, 0, 'd'},
-		{"help", no_argument, 0, 'h'},
+		{"maxmag", required_argument, 0, 'm'},
+		{"minmag", required_argument, 0, 'i'},
 		{0, 0, 0, 0}
 	};
 	int options_index = 0;
 
-	while ((rc = getopt_long(argc, argv, "vd:h", long_options, &options_index)) != -1) {
+	while ((rc = getopt_long(argc, argv, "hvd:m:i:", long_options, &options_index)) != -1) {
 		switch(rc) {
 			case 'v':
 				verbose++;
 				break;
 			case 'd':
 				device = optarg;
+				break;
+			case 'm':
+				maxmag = atof(optarg);
+				break;
+			case 'i':
+				minmag = atof(optarg);
 				break;
 			case 'h':
 			case '?':
