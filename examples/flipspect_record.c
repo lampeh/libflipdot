@@ -97,6 +97,7 @@ static char bargraph[9][9] = {
 };
 		
 static unsigned int verbose = 0;
+static unsigned int verbose_n = 1;
 static unsigned int noflip = 0;
 static unsigned int max_changes = 0;
 static unsigned int rows_changed_0;
@@ -111,33 +112,34 @@ static double max_usec3 = 0, max_usec4 = 0;
 void usage(void) {
 	fprintf(stderr, "Flipdot Spectrum Analyzer\n"
 			"Usage:\n"
-			"-h       | --help           This text\n"
-			"-v       | --verbose        Display timing on stderr for every frame\n"
-			"                            Use twice for debug output\n"
-			"-d <dev> | --device <dev>   ALSA input device name (e.g.: \"hw:1\")\n"
-			"-m <val> | --maxmag <val>   Set upper magnitude limit\n"
-			"-i <val> | --minmag <val>   Set lower magnitude limit\n"
-			"-s <val> | --scale <val>    Divide FFT frequency range\n"
-			"                            (e.g: 2 = display half frequency range)\n"
-			"-n       | --no-flip        Don't update flipdot display\n"
+			"-h       | --help               This text\n"
+			"-v       | --verbose            Display timing on stderr for every frame\n"
+			"                                Use twice for debug output\n"
+			"-e <n>   | --verbose-every <n>  Display debug output every n frames\n"
+			"-d <dev> | --device <dev>       ALSA input device name (e.g.: \"hw:1\")\n"
+			"-m <val> | --maxmag <val>       Set upper magnitude limit\n"
+			"-i <val> | --minmag <val>       Set lower magnitude limit\n"
+			"-s <val> | --scale <val>        Divide FFT frequency range\n"
+			"                                (e.g: 2 = display half frequency range)\n"
+			"-n       | --no-flip            Don't update flipdot display\n"
 			"           --dry-run\n"
 			"\n");
 }
 
 int main(int argc, char **argv) {
 	int rc;
+	int size;
+	int last;
 	unsigned int val;
 	unsigned int fft_len;
-	int dir = 0;
-	int size;
-	int i;
-	int last;
+	unsigned int i, vi;
 	char *device = NULL;
 
            
 	static struct option long_options[] = {
 		{"help", no_argument, 0, 'h'},
 		{"verbose", no_argument, NULL, 'v'},
+		{"verbose-every", required_argument, NULL, 'e'},
 		{"device", required_argument, 0, 'd'},
 		{"maxmag", required_argument, 0, 'm'},
 		{"minmag", required_argument, 0, 'i'},
@@ -148,10 +150,13 @@ int main(int argc, char **argv) {
 	};
 	int options_index = 0;
 
-	while ((rc = getopt_long(argc, argv, "hvd:m:i:s:n", long_options, &options_index)) != -1) {
+	while ((rc = getopt_long(argc, argv, "hve:d:m:i:s:n", long_options, &options_index)) != -1) {
 		switch(rc) {
 			case 'v':
 				verbose++;
+				break;
+			case 'e':
+				verbose_n = atoi(optarg);
 				break;
 			case 'd':
 				device = optarg;
@@ -207,7 +212,7 @@ int main(int argc, char **argv) {
 
 	/* Sampling rate */
 	val = FREQ_MAX * 2;
-	snd_pcm_hw_params_set_rate_near(handle, params, &val, &dir);
+	snd_pcm_hw_params_set_rate_near(handle, params, &val, NULL);
 	fprintf (stderr, "samplerate set to: %d (requested: %d)\n", val, FREQ_MAX * 2);
 
 	// from sndfile-spectrogram:
@@ -236,7 +241,7 @@ int main(int argc, char **argv) {
 
 	/* Set period size */
 	frames = fft_len;
-	snd_pcm_hw_params_set_period_size_near(handle, params, &frames, &dir);
+	snd_pcm_hw_params_set_period_size_near(handle, params, &frames, NULL);
 
 	/* Write the parameters to the driver */
 	if ((rc = snd_pcm_hw_params(handle, params)) < 0) {
@@ -245,7 +250,7 @@ int main(int argc, char **argv) {
 	}
 
 	/* Use a buffer large enough to hold one period */
-	snd_pcm_hw_params_get_period_size(params, &frames, &dir);
+	snd_pcm_hw_params_get_period_size(params, &frames, NULL);
 	size = frames * sizeof(int16_t);
 	if ((buffer = malloc(size)) == NULL) {
 		fprintf (stderr, "malloc failed.\n");
@@ -295,6 +300,7 @@ int main(int argc, char **argv) {
 	if (verbose) {
 		if (verbose > 1) {
 			fprintf(stderr, "\e[H\e[2J");
+			vi = 0;
 		}
 		tv1.tv_sec = 0;
 	}
@@ -338,7 +344,7 @@ int main(int argc, char **argv) {
 
 
 		if (verbose) {
-			if (verbose > 1) {
+			if (verbose > 1 && (vi % verbose_n) == 0) {
 				fprintf(stderr, "\e[H");
 			}
 			rows_changed_0 = 0;
@@ -401,7 +407,7 @@ int main(int argc, char **argv) {
 
 
 			if (verbose) {
-				if (verbose > 1) {
+				if (verbose > 1 && (vi % verbose_n) == 0) {
 					freq_max = last * df - df/2;
 
 					fprintf(stderr, "%2d: mag = %3.2f  ydB = %3.2f  \t"
@@ -483,6 +489,10 @@ int main(int argc, char **argv) {
 			}
 
 			fprintf(stderr, "\e[6A");
+
+			if (verbose > 1 && (vi++ % verbose_n) == 0) {
+				vi = 1;
+			}
 		}
 
 
