@@ -183,7 +183,7 @@ int main(int argc, char **argv) {
 
 	/* Open PCM device for recording (capture). */
 	if ((rc = snd_pcm_open(&handle, device, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
-		fprintf(stderr, "unable to open pcm device: %s\n", snd_strerror(rc));
+		fprintf(stderr, "unable to open pcm device \"%s\": %s\n", device, snd_strerror(rc));
 		exit(1);
 	}
 
