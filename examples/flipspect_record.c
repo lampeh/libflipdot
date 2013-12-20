@@ -31,7 +31,6 @@
 
 #define LOG_SCALE 10
 #define FFT_SCALE1 1
-#define FFT_SCALE2 2
 
 // disable flipdot output for debugging
 #define NOFLIP
@@ -82,6 +81,9 @@ static double minmag = 0.01;
 static double maxmag = 200.0;
 static double mindB;
 
+// divide the FFT range by this factor
+static unsigned int fft_scale2 = 2;
+
 static char bargraph[9][9] = {
 	"        ",
 	"X       ",
@@ -114,6 +116,8 @@ void usage(void) {
             "-d <dev> | --device <dev>   ALSA input device name (e.g.: \"hw:1\")\n"
 			"-m <val> | --maxmag <val>   Set upper magnitude limit\n"
 			"-i <val> | --minmag <val>   Set lower magnitude limit\n"
+			"-s <val> | --scale <val>    Divide FFT frequency range\n"
+			"                            (e.g: 2 = display half frequency range)\n"
 			"\n");
 }
 
@@ -134,11 +138,12 @@ int main(int argc, char **argv) {
 		{"device", required_argument, 0, 'd'},
 		{"maxmag", required_argument, 0, 'm'},
 		{"minmag", required_argument, 0, 'i'},
+		{"scale", required_argument, 0, 's'},
 		{0, 0, 0, 0}
 	};
 	int options_index = 0;
 
-	while ((rc = getopt_long(argc, argv, "hvd:m:i:", long_options, &options_index)) != -1) {
+	while ((rc = getopt_long(argc, argv, "hvd:m:i:s:", long_options, &options_index)) != -1) {
 		switch(rc) {
 			case 'v':
 				verbose++;
@@ -151,6 +156,9 @@ int main(int argc, char **argv) {
 				break;
 			case 'i':
 				minmag = atof(optarg);
+				break;
+			case 's':
+				fft_scale2 = atoi(optarg);
 				break;
 			case 'h':
 			case '?':
@@ -347,8 +355,8 @@ int main(int argc, char **argv) {
 						(freq_domain[fft_len - last] * freq_domain[fft_len - last]));
 				last++;
 				count++;
-//				fprintf(stderr, "i = %d (%d), last = %d, count = %d\n", i, ((i+1) * (fft_len/2/FFT_SCALE2)) / FFT_WIDTH, last, count);
-			} while (last <= ((i+1) * (fft_len/2/FFT_SCALE2)) / FFT_WIDTH && last < (fft_len/2/FFT_SCALE2));
+//				fprintf(stderr, "i = %d (%d), last = %d, count = %d\n", i, ((i+1) * (fft_len/2/fft_scale2)) / FFT_WIDTH, last, count);
+			} while (last <= ((i+1) * (fft_len/2/fft_scale2)) / FFT_WIDTH && last < (fft_len/2/fft_scale2));
 
 			// calculate dB and scale to FFT_HEIGHT
 			double mag = MAX(minmag, MIN(maxmag, sum / count));
@@ -433,8 +441,8 @@ int main(int argc, char **argv) {
 
 			tv1 = tv0;
 
-			if (last != (fft_len/2/FFT_SCALE2)) {
-				fprintf(stderr, "bug: last != (fft_len/2/FFT_SCALE2)-1: %d, %d\n", last, (fft_len/2/FFT_SCALE2));
+			if (last != (fft_len/2/fft_scale2)) {
+				fprintf(stderr, "bug: last != (fft_len/2/fft_scale2)-1: %d, %d\n", last, (fft_len/2/fft_scale2));
 				fprintf(stderr, "\e[1A");
 			}
 
