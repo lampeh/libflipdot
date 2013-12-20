@@ -114,7 +114,7 @@ void usage(void) {
 			"-h       | --help           This text\n"
 			"-v       | --verbose        Display timing on stderr for every frame\n"
 			"                            Use twice for debug output\n"
-            "-d <dev> | --device <dev>   ALSA input device name (e.g.: \"hw:1\")\n"
+			"-d <dev> | --device <dev>   ALSA input device name (e.g.: \"hw:1\")\n"
 			"-m <val> | --maxmag <val>   Set upper magnitude limit\n"
 			"-i <val> | --minmag <val>   Set lower magnitude limit\n"
 			"-s <val> | --scale <val>    Divide FFT frequency range\n"
