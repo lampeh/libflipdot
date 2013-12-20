@@ -349,14 +349,21 @@ int main(int argc, char **argv) {
 			// http://www.fftw.org/fftw3_doc/The-Halfcomplex_002dformat-DFT.html
 
 			// scale FFT bins to FFT_WIDTH
-			do {
+			while (last <= ((i+1) * (fft_len/2/fft_scale2)) / FFT_WIDTH && last < (fft_len/2/fft_scale2)) {
 				// magnitude = sqrt(r^2 + i^2)
 				sum += sqrt((freq_domain[last] * freq_domain[last]) +
 						(freq_domain[fft_len - last] * freq_domain[fft_len - last]));
 				last++;
 				count++;
 //				fprintf(stderr, "i = %d (%d), last = %d, count = %d\n", i, ((i+1) * (fft_len/2/fft_scale2)) / FFT_WIDTH, last, count);
-			} while (last <= ((i+1) * (fft_len/2/fft_scale2)) / FFT_WIDTH && last < (fft_len/2/fft_scale2));
+			}
+
+			if (count == 0) {
+				if (verbose) {
+					fprintf(stderr, "bug: no data for index %d\n", i);
+				}
+				continue;
+			}
 
 			// calculate dB and scale to FFT_HEIGHT
 			double mag = MAX(minmag, MIN(maxmag, sum / count));
