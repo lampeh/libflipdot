@@ -45,9 +45,6 @@
 // disable flipdot output for debugging
 #define NOFLIP
 
-#define FFT_WIDTH DISP_COLS
-#define FFT_HEIGHT DISP_ROWS
-
 #ifndef NOFLIP
 #include <bcm2835.h>
 #include <flipdot.h>
@@ -57,6 +54,9 @@
 #define DISP_ROWS 16
 #define REGISTER_COL_BYTE_COUNT 6
 #endif
+
+#define FFT_WIDTH DISP_COLS
+#define FFT_HEIGHT DISP_ROWS
 
 #if (FFT_HEIGHT != 16)
 #error "lazy fail: FFT columns use uint16_t. FFT_HEIGHT must be 16"
