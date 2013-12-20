@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
 	};
 	int options_index = 0;
 
-	while ((rc = getopt_long(argc, argv, "hvd:m:i:s:", long_options, &options_index)) != -1) {
+	while ((rc = getopt_long(argc, argv, "hvdn:m:i:s:", long_options, &options_index)) != -1) {
 		switch(rc) {
 			case 'v':
 				verbose++;
