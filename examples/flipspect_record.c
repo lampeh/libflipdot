@@ -1,3 +1,13 @@
+// Flipdot Spectrum Analyzer
+// reads input from alsa capture device
+// calculates FFT with fftw3
+// displays spectrum graph on flipdot display
+// (-DNOFLIP if you don't have a flipdot device and want only the debug ouput)
+
+// To compile without bcm2835 and libflipdot:
+// gcc -o flipspect_record flipspect_record.c -O3 -g -DNOFLIP -lasound -lfftw3 -lm
+
+// Initially copy & pasted from these sources:
 // sndfile-tools-1.03/src/sndfile-spectrogram.c
 // http://stackoverflow.com/questions/6666807/how-to-scale-fft-output-of-wave-file
 // http://www.linuxjournal.com/article/6735?page=0,2
