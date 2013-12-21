@@ -346,7 +346,7 @@ int main(int argc, char **argv) {
 		if (rc == -EPIPE) {
 			/* EPIPE means overrun */
 			fprintf(stderr, "overrun occurred\n");
-			snd_pcm_prepare(handle);
+			snd_pcm_recover(handle, rc, 0);
 			continue;
 		} else if (rc < 0) {
 			fprintf(stderr, "error from read: %s\n", snd_strerror(rc));
@@ -538,7 +538,7 @@ int main(int argc, char **argv) {
 	}
 #endif
 
-	snd_pcm_drain(handle);
+	snd_pcm_drop(handle);
 	snd_pcm_close(handle);
 	free(buffer);
 
