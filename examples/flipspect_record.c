@@ -102,6 +102,8 @@ static unsigned int verbose_n = 1;
 static unsigned int noflip = 0;
 static unsigned int samplerate = 48000;
 static unsigned int fft_res = 25;
+static char *device = NULL;
+static char *wisdom = NULL;
 
 static unsigned int max_changes = 0;
 static unsigned int rows_changed_0;
@@ -116,19 +118,20 @@ static double max_usec3 = 0, max_usec4 = 0;
 void usage(void) {
 	fprintf(stderr, "Flipdot Spectrum Analyzer\n"
 			"Usage:\n"
-			"-h       | --help               This text\n"
-			"-v       | --verbose            Display timing on stderr for every frame\n"
-			"                                Use twice for debug output\n"
-			"-e <n>   | --verbose-every <n>  Display debug output every n frames\n"
-			"-d <dev> | --device <dev>       ALSA input device name (e.g.: \"hw:1\")\n"
-			"-m <val> | --maxmag <val>       Set upper magnitude limit\n"
-			"-i <val> | --minmag <val>       Set lower magnitude limit\n"
-			"-s <val> | --scale <val>        Divide FFT frequency range\n"
-			"                                (e.g: 2 = display half frequency range)\n"
-			"-n       | --no-flip            Don't update flipdot display\n"
-			"           --dry-run\n"
-			"-r <val> | --rate <val>         Set samplerate\n"
-			"-f <val> | --freq <val>         Set FFT bin resolution\n"
+			"-h        | --help               This text\n"
+			"-v        | --verbose            Display timing on stderr for every frame\n"
+			"                                 Use twice for debug output\n"
+			"-e <n>    | --verbose-every <n>  Display debug output every n frames\n"
+			"-d <dev>  | --device <dev>       ALSA input device name (e.g.: \"hw:1\")\n"
+			"-m <val>  | --maxmag <val>       Set upper magnitude limit\n"
+			"-i <val>  | --minmag <val>       Set lower magnitude limit\n"
+			"-s <val>  | --scale <val>        Divide FFT frequency range\n"
+			"                                 (e.g: 2 = display half frequency range)\n"
+			"-n        | --no-flip            Don't update flipdot display\n"
+			"            --dry-run\n"
+			"-r <val>  | --rate <val>         Set samplerate\n"
+			"-f <val>  | --freq <val>         Set FFT bin resolution\n"
+			"-w <file> | --wisdom <file>      Load/save FFTW wisdom for faster startup\n"
 			"\n");
 }
 
@@ -139,44 +142,41 @@ int main(int argc, char **argv) {
 	unsigned int val;
 	unsigned int fft_len;
 	unsigned int i, vi;
-	char *device = NULL;
 
            
 	static struct option long_options[] = {
-		{"help", no_argument, 0, 'h'},
-		{"verbose", no_argument, NULL, 'v'},
-		{"verbose-every", required_argument, NULL, 'e'},
 		{"device", required_argument, 0, 'd'},
-		{"maxmag", required_argument, 0, 'm'},
+		{"verbose-every", required_argument, NULL, 'e'},
+		{"freq", required_argument, 0, 'f'},
+		{"help", no_argument, 0, 'h'},
 		{"minmag", required_argument, 0, 'i'},
-		{"scale", required_argument, 0, 's'},
+		{"maxmag", required_argument, 0, 'm'},
 		{"no-flip", no_argument, 0, 'n'},
 		{"dry-run", no_argument, 0, 'n'},
 		{"rate", required_argument, 0, 'r'},
-		{"freq", required_argument, 0, 'f'},
+		{"scale", required_argument, 0, 's'},
+		{"verbose", no_argument, NULL, 'v'},
+		{"wisdom", required_argument, 0, 'w'},
 		{0, 0, 0, 0}
 	};
 	int options_index = 0;
 
-	while ((rc = getopt_long(argc, argv, "d:e:f:hi:m:nr:s:v", long_options, &options_index)) != -1) {
+	while ((rc = getopt_long(argc, argv, "d:e:f:hi:m:nr:s:vw:", long_options, &options_index)) != -1) {
 		switch(rc) {
-			case 'v':
-				verbose++;
+			case 'd':
+				device = optarg;
 				break;
 			case 'e':
 				verbose_n = atoi(optarg);
 				break;
-			case 'd':
-				device = optarg;
-				break;
-			case 'm':
-				maxmag = atof(optarg);
+			case 'f':
+				fft_res = atoi(optarg);
 				break;
 			case 'i':
 				minmag = atof(optarg);
 				break;
-			case 's':
-				fft_scale2 = atoi(optarg);
+			case 'm':
+				maxmag = atof(optarg);
 				break;
 			case 'n':
 				noflip = 1;
@@ -184,8 +184,14 @@ int main(int argc, char **argv) {
 			case 'r':
 				samplerate = atoi(optarg);
 				break;
-			case 'f':
-				fft_res = atoi(optarg);
+			case 's':
+				fft_scale2 = atoi(optarg);
+				break;
+			case 'v':
+				verbose++;
+				break;
+			case 'w':
+				wisdom = optarg;
 				break;
 			case 'h':
 			case '?':
@@ -287,10 +293,18 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
+	if (wisdom) {
+		fftw_import_wisdom_from_filename(wisdom);
+	}
+
 	plan = fftw_plan_r2r_1d(fft_len, time_domain, freq_domain, FFTW_R2HC, FFTW_PATIENT | FFTW_DESTROY_INPUT);
 	if (plan == NULL) {
 		fprintf (stderr, "fftw_plan failed.\n");
 		exit (1);
+	}
+
+	if (wisdom) {
+		fftw_export_wisdom_to_filename(wisdom);
 	}
 
 	fputs("FFTW plan:\n", stderr);
