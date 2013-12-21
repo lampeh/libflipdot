@@ -146,43 +146,27 @@ sreg_col_clk(void) {
 }
 
 static void
-sreg_col_shift_0(void) {
-#ifndef GPIO_MULTI
-	_hw_clr(COL_DATA);
-#endif
-
-#ifndef NOSLEEP
-	_nanosleep(DATA_DELAY);
-#endif
-
-	sreg_col_clk();
-}
-
-static void
-sreg_col_shift_1(void) {
-	_hw_set(COL_DATA);
-
-#ifndef NOSLEEP
-	_nanosleep(DATA_DELAY);
-#endif
-
-	sreg_col_clk();
-}
-
-static void
-sreg_col_shift_bits(uint16_t data, uint_fast16_t count)
+sreg_col_shift_bits(uint32_t data, uint_fast16_t count)
 {
-	uint32_t d = data;
+	while (count--) {
+		if (data & (1 << count)) {
+			_hw_set(COL_DATA);
 
-#ifdef GPIO_MULTI
-	_hw_clr(COL_DATA);
+#ifndef NOSLEEP
+			_nanosleep(DATA_DELAY);
 #endif
 
-	while (count--) {
-		if (d & (1 << count)) {
-			sreg_col_shift_1();
+			sreg_col_clk();
 		} else {
-			sreg_col_shift_0();
+#ifndef GPIO_MULTI
+			_hw_clr(COL_DATA);
+#endif
+
+#ifndef NOSLEEP
+			_nanosleep(DATA_DELAY);
+#endif
+
+			sreg_col_clk();
 		}
 	}
 }
@@ -191,6 +175,11 @@ static void
 sreg_fill_col(const uint8_t *col_data, uint_fast16_t col_count)
 {
 	uint_fast16_t i;
+
+#ifdef GPIO_MULTI
+	// COL_DATA is cleared after clock cycle, pre-set to 0
+	_hw_clr(COL_DATA);
+#endif
 
 	// process the last col_count % 16 bits
 	sreg_col_shift_bits(((uint16_t *)col_data)[col_count >> 4], col_count & 0x0f);
@@ -206,6 +195,7 @@ static void
 sreg_fill_both(const uint8_t *row_data, uint_fast16_t row_count, const uint8_t *col_data, uint_fast16_t col_count)
 {
 #ifdef GPIO_MULTI
+	// ROW_DATA and COL_DATA are cleared after clock cycle, pre-set to 0
 	_hw_clr_multi(_BV(ROW_DATA) | _BV(COL_DATA));
 #endif
 
@@ -214,8 +204,6 @@ sreg_fill_both(const uint8_t *row_data, uint_fast16_t row_count, const uint8_t *
 #ifdef GPIO_MULTI
 		uint32_t bits_to_1 = ((row_count && ISBITSET(row_data, row_count - 1))?(_BV(ROW_DATA)):(0)) |
 							((col_count && ISBITSET(col_data, col_count - 1))?(_BV(COL_DATA)):(0));
-
-//		uint32_t bits_to_0 = (~bits_to_1) & (_BV(ROW_DATA) | _BV(COL_DATA));
 
 		if (bits_to_1) {
 			_hw_set_multi(bits_to_1);
@@ -259,7 +247,7 @@ sreg_fill_both(const uint8_t *row_data, uint_fast16_t row_count, const uint8_t *
 #endif
 
 #ifdef GPIO_MULTI
-		_hw_clr_multi( ((row_count)?(_BV(ROW_CLK)):(0)) | ((col_count)?(_BV(COL_CLK)):(0)) | _BV(ROW_DATA) | _BV(COL_DATA));
+		_hw_clr_multi(_BV(ROW_CLK) |_BV(COL_CLK) | _BV(ROW_DATA) | _BV(COL_DATA));
 #else
 		if (row_count) {
 			_hw_clr(ROW_CLK);
