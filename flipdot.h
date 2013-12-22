@@ -8,11 +8,11 @@
 // see http://elinux.org/RPi_Low-level_peripherals
 // and https://wiki.attraktor.org/FlipdotDisplay#Daten
 
-#define ROW_DATA 11
-#define ROW_CLK 9
+#define ROW_DATA 8
+#define ROW_CLK 25
 
-#define COL_DATA 8
-#define COL_CLK 25
+#define COL_DATA 11
+#define COL_CLK 9
 
 #define STROBE 7
 
