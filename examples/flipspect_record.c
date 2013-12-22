@@ -28,7 +28,7 @@
 #include <fftw3.h>
 
 
-#define LOG_SCALE 10
+#define LOG_SCALE 20
 #define FFT_SCALE1 1
 
 // disable flipdot output for debugging
