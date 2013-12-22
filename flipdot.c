@@ -285,8 +285,14 @@ sreg_fill_both(const uint8_t *row_data, uint_fast16_t row_count, const uint8_t *
 	row_count = row_count >> 4;
 	col_count = col_count >> 4;
 	while (row_count || col_count) {
-		sreg_shift_both_bits((row_count)?(((uint16_t *)row_data)[row_count-1]):(0), (row_count)?(16):(0),
-							(col_count)?(((uint16_t *)col_data)[col_count-1]):(0), (col_count)?(16):(0));
+		if (row_count && col_count) {
+			sreg_shift_both_bits(((uint16_t *)row_data)[row_count-1], 16,
+								((uint16_t *)col_data)[col_count-1], 16);
+		} else if (col_count) {
+			sreg_shift_col_bits(((uint16_t *)col_data)[col_count-1], 16);
+		} else {
+			sreg_shift_both_bits(((uint16_t *)row_data)[row_count-1], 16, 0, 0);
+		}
 
 		if (row_count) {
 			row_count--;
