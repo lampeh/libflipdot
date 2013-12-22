@@ -127,7 +127,7 @@ sreg_strobe(void)
 }
 
 static void
-sreg_col_clk(void) {
+sreg_clk_col(void) {
 	_hw_set(COL_CLK);
 
 #ifndef NOSLEEP
@@ -146,17 +146,19 @@ sreg_col_clk(void) {
 }
 
 static void
-sreg_col_shift_bits(uint32_t data, uint_fast16_t count)
+sreg_shift_col_bits(uint16_t data, uint_fast16_t count)
 {
+	uint32_t d = data; // produces faster bit test in the loop
+
 	while (count--) {
-		if (data & (1 << count)) {
+		if (d & (1 << count)) {
 			_hw_set(COL_DATA);
 
 #ifndef NOSLEEP
 			_nanosleep(DATA_DELAY);
 #endif
 
-			sreg_col_clk();
+			sreg_clk_col();
 		} else {
 #ifndef GPIO_MULTI
 			_hw_clr(COL_DATA);
@@ -166,7 +168,7 @@ sreg_col_shift_bits(uint32_t data, uint_fast16_t count)
 			_nanosleep(DATA_DELAY);
 #endif
 
-			sreg_col_clk();
+			sreg_clk_col();
 		}
 	}
 }
@@ -182,28 +184,25 @@ sreg_fill_col(const uint8_t *col_data, uint_fast16_t col_count)
 #endif
 
 	// process the last col_count % 16 bits
-	sreg_col_shift_bits(((uint16_t *)col_data)[col_count >> 4], col_count & 0x0f);
+	if (col_count & 0x0f) {
+		sreg_shift_col_bits(((uint16_t *)col_data)[col_count >> 4], col_count & 0x0f);
+	}
 
 	// process bits in chunks of 16
 	i = col_count >> 4;
 	while (i--) {
-		sreg_col_shift_bits(((uint16_t *)col_data)[i], 16);
+		sreg_shift_col_bits(((uint16_t *)col_data)[i], 16);
 	}
 }
 
 static void
-sreg_fill_both(const uint8_t *row_data, uint_fast16_t row_count, const uint8_t *col_data, uint_fast16_t col_count)
+sreg_shift_both_bits(uint16_t row_data, uint_fast16_t row_count, uint16_t col_data, uint_fast16_t col_count)
 {
-#ifdef GPIO_MULTI
-	// ROW_DATA and COL_DATA are cleared after clock cycle, pre-set to 0
-	_hw_clr_multi(_BV(ROW_DATA) | _BV(COL_DATA));
-#endif
-
 	while (row_count || col_count) {
 
 #ifdef GPIO_MULTI
-		uint32_t bits_to_1 = ((row_count && ISBITSET(row_data, row_count - 1))?(_BV(ROW_DATA)):(0)) |
-							((col_count && ISBITSET(col_data, col_count - 1))?(_BV(COL_DATA)):(0));
+		uint32_t bits_to_1 = ((row_count && (row_data & (1 << (row_count-1))))?(_BV(ROW_DATA)):(0)) |
+							((col_count && (col_data & (1 << (col_count-1))))?(_BV(COL_DATA)):(0));
 
 		if (bits_to_1) {
 			_hw_set_multi(bits_to_1);
@@ -247,7 +246,7 @@ sreg_fill_both(const uint8_t *row_data, uint_fast16_t row_count, const uint8_t *
 #endif
 
 #ifdef GPIO_MULTI
-		_hw_clr_multi(_BV(ROW_CLK) |_BV(COL_CLK) | _BV(ROW_DATA) | _BV(COL_DATA));
+		_hw_clr_multi(_BV(ROW_CLK) | _BV(COL_CLK) | _BV(ROW_DATA) | _BV(COL_DATA));
 #else
 		if (row_count) {
 			_hw_clr(ROW_CLK);
@@ -257,6 +256,37 @@ sreg_fill_both(const uint8_t *row_data, uint_fast16_t row_count, const uint8_t *
 			_hw_clr(COL_CLK);
 		}
 #endif
+
+		if (row_count) {
+			row_count--;
+		}
+
+		if (col_count) {
+			col_count--;
+		}
+	}
+}
+
+static void
+sreg_fill_both(const uint8_t *row_data, uint_fast16_t row_count, const uint8_t *col_data, uint_fast16_t col_count)
+{
+#ifdef GPIO_MULTI
+	// ROW_DATA and COL_DATA are cleared after clock cycle, pre-set to 0
+	_hw_clr_multi(_BV(ROW_DATA) | _BV(COL_DATA));
+#endif
+
+	// process the last count % 16 bits
+	if (row_count & 0x0f || col_count & 0x0f) {
+		sreg_shift_both_bits(((uint16_t *)row_data)[row_count >> 4], row_count & 0x0f,
+							((uint16_t *)col_data)[col_count >> 4], col_count & 0x0f);
+	}
+
+	// process bits in chunks of 16
+	row_count = row_count >> 4;
+	col_count = col_count >> 4;
+	while (row_count || col_count) {
+		sreg_shift_both_bits((row_count)?(((uint16_t *)row_data)[row_count-1]):(0), (row_count)?(16):(0),
+							(col_count)?(((uint16_t *)col_data)[col_count-1]):(0), (col_count)?(16):(0));
 
 		if (row_count) {
 			row_count--;
