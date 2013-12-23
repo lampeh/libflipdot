@@ -31,11 +31,11 @@
 #define CLK_DELAY 25
 #define STROBE_DELAY 25
 
-// OE0 to OE1 delay (ns)
-#define OE_DELAY 100*1000
+// OE0 to OE1 delay (us)
+#define OE_DELAY 100
 
-// flip motor pulse width (ns)
-#define FLIP_DELAY 500*1000
+// flip motor pulse width (us)
+#define FLIP_DELAY 500
 
 
 // Display geometry

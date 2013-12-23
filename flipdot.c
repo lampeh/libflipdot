@@ -29,6 +29,14 @@ _nanosleep(long nsec)
 	while (nanosleep(&req, &req) == -1 && errno == EINTR);
 }
 
+static void
+_microsleep(uint64_t micros)
+{
+	// busy loop on the bcm2835 system timer
+	uint64_t compare =  bcm2835_st_read() + micros;
+	while(bcm2835_st_read() < compare)
+		;
+}
 
 static void
 _hw_init(void)
@@ -290,7 +298,7 @@ sreg_fill_both(const uint8_t *row_data, uint_fast16_t row_count, const uint8_t *
 								((uint16_t *)col_data)[col_count-1], 16);
 		} else if (col_count) {
 			sreg_shift_col_bits(((uint16_t *)col_data)[col_count-1], 16);
-		} else {
+		} else if (row_count) {
 			sreg_shift_both_bits(((uint16_t *)row_data)[row_count-1], 16, 0, 0);
 		}
 
@@ -311,11 +319,11 @@ flip_to_0(void)
 {
 	_hw_clr(OE1);
 
-	_nanosleep(OE_DELAY);
+	_microsleep(OE_DELAY);
 
 	_hw_set(OE0);
 
-	_nanosleep(FLIP_DELAY);
+	_microsleep(FLIP_DELAY);
 
 	_hw_clr(OE0);
 }
@@ -325,11 +333,11 @@ flip_to_1(void)
 {
 	_hw_clr(OE0);
 
-	_nanosleep(OE_DELAY);
+	_microsleep(OE_DELAY);
 
 	_hw_set(OE1);
 
-	_nanosleep(FLIP_DELAY);
+	_microsleep(FLIP_DELAY);
 
 	_hw_clr(OE1);
 }
