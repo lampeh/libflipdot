@@ -8,11 +8,11 @@
 // see http://elinux.org/RPi_Low-level_peripherals
 // and https://wiki.attraktor.org/FlipdotDisplay#Daten
 
-#define ROW_DATA 11
-#define ROW_CLK 9
+#define ROW_DATA 8
+#define ROW_CLK 25
 
-#define COL_DATA 8
-#define COL_CLK 25
+#define COL_DATA 11
+#define COL_CLK 9
 
 #define STROBE 7
 
@@ -31,11 +31,11 @@
 #define CLK_DELAY 25
 #define STROBE_DELAY 25
 
-// OE0 to OE1 delay (ns)
-#define OE_DELAY 100*1000
+// OE0 to OE1 delay (us)
+#define OE_DELAY 100
 
-// flip motor pulse width (ns)
-#define FLIP_DELAY 500*1000
+// flip motor pulse width (us)
+#define FLIP_DELAY 500
 
 
 // Display geometry
