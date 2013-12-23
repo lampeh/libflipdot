@@ -33,7 +33,7 @@ static void
 _microsleep(uint64_t micros)
 {
 	// busy loop on the bcm2835 system timer
-	uint64_t compare =  bcm2835_st_read() + micros;
+	uint64_t compare = bcm2835_st_read() + micros;
 	while(bcm2835_st_read() < compare);
 }
 
@@ -105,16 +105,27 @@ _hw_shutdown(void)
 	bcm2835_gpio_fsel(COL_CLK, BCM2835_GPIO_FSEL_INPT);
 }
 
-static void
-_hw_set(uint8_t gpio)
-{
-	bcm2835_gpio_set(gpio);
-}
-
+#ifdef GPIO_MULTI
 static void
 _hw_set_multi(uint32_t mask)
 {
 	bcm2835_gpio_set_multi(mask);
+}
+
+static void
+_hw_clr_multi(uint32_t mask)
+{
+	bcm2835_gpio_clr_multi(mask);
+}
+
+static inline void _hw_set(uint8_t gpio) { _hw_set_multi(1 << gpio); }
+static inline void _hw_clr(uint8_t gpio) { _hw_clr_multi(1 << gpio); }
+
+#else
+
+_hw_set(uint8_t gpio)
+{
+	bcm2835_gpio_set(gpio);
 }
 
 static void
@@ -123,11 +134,7 @@ _hw_clr(uint8_t gpio)
 	bcm2835_gpio_clr(gpio);
 }
 
-static void
-_hw_clr_multi(uint32_t mask)
-{
-	bcm2835_gpio_clr_multi(mask);
-}
+#endif
 
 
 static void
