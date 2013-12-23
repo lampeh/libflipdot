@@ -479,8 +479,11 @@ flipdot_update_frame(const uint8_t *frame)
 		row_changed_to_1 = 0;
 
 		for (uint_fast16_t col = 0; col < REGISTER_COL_BYTE_COUNT; col++) {
-			cols_to_0[col] = ~((*frameptr_old) & ~(*frameptr_new));
-			cols_to_1[col] = (~(*frameptr_old) & (*frameptr_new));
+			uint8_t old = *frameptr_old;
+			uint8_t new = *frameptr_new;
+
+			cols_to_0[col] = ~((old) & ~(new));
+			cols_to_1[col] = (~(old) & (new));
 
 			if (cols_to_0[col] != 0xFF) {
 				row_changed_to_0 = 1;
