@@ -34,8 +34,7 @@ _microsleep(uint64_t micros)
 {
 	// busy loop on the bcm2835 system timer
 	uint64_t compare =  bcm2835_st_read() + micros;
-	while(bcm2835_st_read() < compare)
-		;
+	while(bcm2835_st_read() < compare);
 }
 
 static void
@@ -65,6 +64,15 @@ _hw_init(void)
 	bcm2835_gpio_fsel(ROW_CLK, BCM2835_GPIO_FSEL_OUTP);
 	bcm2835_gpio_fsel(COL_DATA, BCM2835_GPIO_FSEL_OUTP);
 	bcm2835_gpio_fsel(COL_CLK, BCM2835_GPIO_FSEL_OUTP);
+
+	// TODO: is this really useful? better use external pull-down
+	bcm2835_gpio_set_pud(OE0, BCM2835_GPIO_PUD_DOWN  );
+	bcm2835_gpio_set_pud(OE1, BCM2835_GPIO_PUD_DOWN  );
+	bcm2835_gpio_set_pud(STROBE, BCM2835_GPIO_PUD_DOWN  );
+	bcm2835_gpio_set_pud(ROW_DATA, BCM2835_GPIO_PUD_DOWN  );
+	bcm2835_gpio_set_pud(ROW_CLK, BCM2835_GPIO_PUD_DOWN  );
+	bcm2835_gpio_set_pud(COL_DATA, BCM2835_GPIO_PUD_DOWN  );
+	bcm2835_gpio_set_pud(COL_CLK, BCM2835_GPIO_PUD_DOWN  );
 }
 
 static void
@@ -136,6 +144,10 @@ sreg_strobe(void)
 
 static void
 sreg_clk_col(void) {
+#ifndef NOSLEEP
+			_nanosleep(DATA_DELAY);
+#endif
+
 	_hw_set(COL_CLK);
 
 #ifndef NOSLEEP
@@ -161,21 +173,11 @@ sreg_shift_col_bits(uint16_t data, uint_fast16_t count)
 	while (count--) {
 		if (d & (1 << count)) {
 			_hw_set(COL_DATA);
-
-#ifndef NOSLEEP
-			_nanosleep(DATA_DELAY);
-#endif
-
 			sreg_clk_col();
 		} else {
 #ifndef GPIO_MULTI
 			_hw_clr(COL_DATA);
 #endif
-
-#ifndef NOSLEEP
-			_nanosleep(DATA_DELAY);
-#endif
-
 			sreg_clk_col();
 		}
 	}
