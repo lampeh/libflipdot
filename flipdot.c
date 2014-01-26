@@ -32,9 +32,12 @@ _nanosleep(long nsec)
 static void
 _microsleep(uint64_t micros)
 {
+	_nanosleep(micros * 1000);
+/*
 	// busy loop on the bcm2835 system timer
 	uint64_t compare = bcm2835_st_read() + micros;
 	while(bcm2835_st_read() < compare);
+*/
 }
 
 static void
