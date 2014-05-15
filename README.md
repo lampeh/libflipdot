@@ -5,6 +5,16 @@ Flip Dot Display driver for Raspberry Pi
 https://wiki.attraktor.org/FlipdotDisplay
 
 
+Uses
+----
+
+* Everything that can be converted to a bitmap
+* [Flip Dot Camera](http://www.youtube.com/watch?v=X2mXpYzDers)
+* [Flip Dot Spectrum Analyzer](http://www.youtube.com/watch?v=RxWxNWCN0fE)
+* Clock
+* Video Wall with vlc
+
+
 Installation
 ------------
 
