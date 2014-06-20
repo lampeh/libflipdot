@@ -26,7 +26,7 @@ $(EXECUTABLES): % : %.o $(LIB)
 	$(CC) -o $@ $< $(LDFLAGS)
 
 examples/flipspect_record: % : %.o $(LIB)
-	$(CC) -o $@ $< $(LDFLAGS) -lasound -lfftw3 -lm
+	#$(CC) -o $@ $< $(LDFLAGS) -lasound -lfftw3 -lm
 
 $(LIB_OBJECTS): %.o : %.c
 	$(CC) $(LIB_CFLAGS) $(LIB_CPPFLAGS) -c -o $@ $<
