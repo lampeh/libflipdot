@@ -43,6 +43,9 @@ from stdin and sends it to the display, loops until EOF. Use
 [this 3x5 figlet font](http://www.figlet.org/fontdb_example.cgi?font=3x5.flf)
 to pipe text onto the display.
 
+`flipspect_record`: Flipdot Spectrum Analyzer. Samples audio from ALSA input
+and displays the FFT output. Requires FFTW3 and ALSA.
+
 To use the library for your own code, copy flipdot.h and libflipdot.a
 where compiler and linker will find it. Link with `-lflipdot`
 
