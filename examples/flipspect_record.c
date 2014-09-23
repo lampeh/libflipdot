@@ -147,12 +147,12 @@ int drop_privileges(uid_t runas_uid, gid_t runas_gid) {
 
 	if (!uid || !gid) {
 		fprintf(stderr, "please set non-root --user and --group\n");
-		return(0);
+		return 0;
 	}
 
 	if (setgroups(1, &gid) || setgid(gid) || setuid(uid)) {
 		fprintf(stderr, "failed to set unprivileged user or group: %s\n", strerror(errno));
-		return(0);
+		return 0;
 	}
 
 	if (getresgid(&rgid, &egid, &sgid) || getresuid(&ruid, &euid, &suid) ||
@@ -160,10 +160,10 @@ int drop_privileges(uid_t runas_uid, gid_t runas_gid) {
 		ruid != uid || euid != uid || suid != uid ||
 		setegid(0) != -1  || seteuid(0) != -1) {
 			fprintf(stderr, "uid/gid validation failed\n");
-			return(0);
+			return 0;
 	}
 
-	return(1);
+	return 1;
 }
 
 int main(int argc, char **argv) {
@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
 					struct group *entry = getgrnam(optarg);
 					if (!entry) {
 						fprintf(stderr, "can't resolve gid for group \"%s\": %s\n", optarg, strerror(errno));
-						exit(1);
+						return 1;
 					}
 					runas_gid = entry->gr_gid;
 					break;
@@ -235,7 +235,7 @@ int main(int argc, char **argv) {
 					struct passwd *entry = getpwnam(optarg);
 					if (!entry) {
 						fprintf(stderr, "can't resolve uid for user \"%s\": %s\n", optarg, strerror(errno));
-						exit(1);
+						return 1;
 					}
 					runas_uid = entry->pw_uid;
 					break;
@@ -264,16 +264,16 @@ int main(int argc, char **argv) {
 	if (!noflip) {
 		if (geteuid()) {
 			fprintf(stderr, "must have root privileges to initialize GPIOs\n");
-			exit(1);
+			return 1;
 		}
 
 		if (!bcm2835_init()) {
 			fprintf(stderr, "bcm2835_init failed\n");
-			exit(1);
+			return 1;
 		}
 
 		if (!drop_privileges(runas_uid, runas_gid)) {
-			exit(1);
+			return 1;
 		}
 	}
 #endif
@@ -282,7 +282,7 @@ int main(int argc, char **argv) {
 	/* Open PCM device for recording (capture). */
 	if ((rc = snd_pcm_open(&handle, device, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
 		fprintf(stderr, "unable to open pcm device \"%s\": %s\n", device, snd_strerror(rc));
-		exit(1);
+		return 1;
 	}
 
 	/* Allocate a hardware parameters object. */
@@ -305,7 +305,7 @@ int main(int argc, char **argv) {
 	/* Sampling rate */
 	val = samplerate;
 	snd_pcm_hw_params_set_rate_near(handle, params, &val, NULL);
-	fprintf (stderr, "samplerate set to: %u (requested: %d)\n", val, samplerate);
+	fprintf(stderr, "samplerate set to: %u (requested: %d)\n", val, samplerate);
 
 	// from sndfile-spectrogram:
 	/*
@@ -338,15 +338,15 @@ int main(int argc, char **argv) {
 	/* Write the parameters to the driver */
 	if ((rc = snd_pcm_hw_params(handle, params)) < 0) {
 		fprintf(stderr, "unable to set hw parameters: %s\n", snd_strerror(rc));
-		exit(1);
+		return 1;
 	}
 
 	/* Use a buffer large enough to hold one period */
 	snd_pcm_hw_params_get_period_size(params, &frames, NULL);
 	size = frames * sizeof(int16_t);
 	if ((buffer = malloc(size)) == NULL) {
-		fprintf (stderr, "malloc failed.\n");
-		exit (1);
+		fprintf(stderr, "malloc failed\n");
+		return 1;
 	}
 
 	if (frames != fft_len) {
@@ -362,7 +362,7 @@ int main(int argc, char **argv) {
 
 	if (time_domain == NULL || freq_domain == NULL) {
 		fprintf(stderr, "fftw_malloc failed\n");
-		exit(1);
+		return 1;
 	}
 
 	if (wisdom) {
@@ -371,15 +371,15 @@ int main(int argc, char **argv) {
 
 	plan = fftw_plan_r2r_1d(fft_len, time_domain, freq_domain, FFTW_R2HC, FFTW_PATIENT | FFTW_DESTROY_INPUT);
 	if (plan == NULL) {
-		fprintf (stderr, "fftw_plan failed.\n");
-		exit (1);
+		fprintf(stderr, "fftw_plan failed\n");
+		return 1;
 	}
 
 	if (wisdom) {
 		fftw_export_wisdom_to_filename(wisdom);
 	}
 
-	fputs("FFTW plan:\n", stderr);
+	fprintf(stderr, "FFTW plan:\n");
 	fftw_fprint_plan(plan, stderr);
 	fputc('\n', stderr);
 
