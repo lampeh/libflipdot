@@ -16,6 +16,7 @@
 #define ALSA_PCM_NEW_HW_PARAMS_API
 
 #include <ctype.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,6 +24,9 @@
 #include <math.h>
 #include <sys/time.h>
 #include <getopt.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <grp.h>
 
 #include <alsa/asoundlib.h>
 #include <fftw3.h>
@@ -118,21 +122,48 @@ static double max_usec3 = 0, max_usec4 = 0;
 void usage(void) {
 	fprintf(stderr, "Flipdot Spectrum Analyzer\n"
 			"Usage:\n"
-			"-h        | --help               This text\n"
-			"-v        | --verbose            Display timing on stderr for every frame\n"
-			"                                 Use twice for debug output\n"
-			"-e <n>    | --verbose-every <n>  Display debug output every n frames\n"
-			"-d <dev>  | --device <dev>       ALSA input device name (e.g.: \"hw:1\")\n"
-			"-m <val>  | --maxmag <val>       Set upper magnitude limit\n"
-			"-i <val>  | --minmag <val>       Set lower magnitude limit\n"
-			"-s <val>  | --scale <val>        Divide FFT frequency range\n"
-			"                                 (e.g: 2 = display half frequency range)\n"
-			"-n        | --no-flip            Don't update flipdot display\n"
-			"            --dry-run\n"
-			"-r <val>  | --rate <val>         Set samplerate\n"
-			"-f <val>  | --freq <val>         Set FFT bin resolution\n"
-			"-w <file> | --wisdom <file>      Load/save FFTW wisdom for faster startup\n"
+			"-h         | --help               This text\n"
+			"-v         | --verbose            Display timing on stderr for every frame\n"
+			"                                  Use twice for debug output\n"
+			"-e <n>     | --verbose-every <n>  Display debug output every n frames\n"
+			"-d <dev>   | --device <dev>       ALSA input device name (e.g.: \"hw:1\")\n"
+			"-m <val>   | --maxmag <val>       Set upper magnitude limit\n"
+			"-i <val>   | --minmag <val>       Set lower magnitude limit\n"
+			"-s <val>   | --scale <val>        Divide FFT frequency range\n"
+			"                                  (e.g: 2 = display half frequency range)\n"
+			"-n         | --no-flip            Don't update flipdot display\n"
+			"             --dry-run\n"
+			"-r <val>   | --rate <val>         Set samplerate\n"
+			"-f <val>   | --freq <val>         Set FFT bin resolution\n"
+			"-w <file>  | --wisdom <file>      Load/save FFTW wisdom for faster startup\n"
+			"-u <user>  | --user <user>        Set unprivileged user\n"
+			"-g <group> | --group <group>      Set unprivileged group\n"
 			"\n");
+}
+
+int drop_privileges(uid_t runas_uid, gid_t runas_gid) {
+	uid_t uid = runas_uid, ruid, euid, suid;
+	gid_t gid = runas_gid, rgid, egid, sgid;
+
+	if (!uid || !gid) {
+		fprintf(stderr, "please set non-root --user and --group\n");
+		return(0);
+	}
+
+	if (setgroups(1, &gid) || setgid(gid) || setuid(uid)) {
+		fprintf(stderr, "failed to set unprivileged user or group: %s\n", strerror(errno));
+		return(0);
+	}
+
+	if (getresgid(&rgid, &egid, &sgid) || getresuid(&ruid, &euid, &suid) ||
+		rgid != gid || egid != gid || sgid != gid ||
+		ruid != uid || euid != uid || suid != uid ||
+		setegid(0) != -1  || seteuid(0) != -1) {
+			fprintf(stderr, "uid/gid validation failed\n");
+			return(0);
+	}
+
+	return(1);
 }
 
 int main(int argc, char **argv) {
@@ -143,11 +174,11 @@ int main(int argc, char **argv) {
 	unsigned int fft_len;
 	unsigned int i, vi;
 
-           
 	static struct option long_options[] = {
 		{"device", required_argument, 0, 'd'},
 		{"verbose-every", required_argument, NULL, 'e'},
 		{"freq", required_argument, 0, 'f'},
+		{"group", required_argument, NULL, 'g'},
 		{"help", no_argument, 0, 'h'},
 		{"minmag", required_argument, 0, 'i'},
 		{"maxmag", required_argument, 0, 'm'},
@@ -155,13 +186,17 @@ int main(int argc, char **argv) {
 		{"dry-run", no_argument, 0, 'n'},
 		{"rate", required_argument, 0, 'r'},
 		{"scale", required_argument, 0, 's'},
+		{"user", required_argument, NULL, 'u'},
 		{"verbose", no_argument, NULL, 'v'},
 		{"wisdom", required_argument, 0, 'w'},
 		{0, 0, 0, 0}
 	};
 	int options_index = 0;
 
-	while ((rc = getopt_long(argc, argv, "d:e:f:hi:m:nr:s:vw:", long_options, &options_index)) != -1) {
+	uid_t runas_uid = getuid();
+	gid_t runas_gid = getgid();
+
+	while ((rc = getopt_long(argc, argv, "d:e:f:g:hi:m:nr:s:u:vw:", long_options, &options_index)) != -1) {
 		switch(rc) {
 			case 'd':
 				device = optarg;
@@ -172,6 +207,15 @@ int main(int argc, char **argv) {
 			case 'f':
 				fft_res = atoi(optarg);
 				break;
+			case 'g': {
+					struct group *entry = getgrnam(optarg);
+					if (!entry) {
+						fprintf(stderr, "can't resolve gid for group \"%s\": %s\n", optarg, strerror(errno));
+						exit(1);
+					}
+					runas_gid = entry->gr_gid;
+					break;
+				}
 			case 'i':
 				minmag = atof(optarg);
 				break;
@@ -187,6 +231,15 @@ int main(int argc, char **argv) {
 			case 's':
 				fft_scale2 = atoi(optarg);
 				break;
+			case 'u': {
+					struct passwd *entry = getpwnam(optarg);
+					if (!entry) {
+						fprintf(stderr, "can't resolve uid for user \"%s\": %s\n", optarg, strerror(errno));
+						exit(1);
+					}
+					runas_uid = entry->pw_uid;
+					break;
+				}
 			case 'v':
 				verbose++;
 				break;
@@ -205,6 +258,25 @@ int main(int argc, char **argv) {
 	if (device == NULL) {
 		device = "default";
 	}
+
+
+#ifndef NOFLIP
+	if (!noflip) {
+		if (geteuid()) {
+			fprintf(stderr, "must have root privileges to initialize GPIOs\n");
+			exit(1);
+		}
+
+		if (!bcm2835_init()) {
+			fprintf(stderr, "bcm2835_init failed\n");
+			exit(1);
+		}
+
+		if (!drop_privileges(runas_uid, runas_gid)) {
+			exit(1);
+		}
+	}
+#endif
 
 
 	/* Open PCM device for recording (capture). */
@@ -314,11 +386,6 @@ int main(int argc, char **argv) {
 
 #ifndef NOFLIP
 	if (!noflip) {
-		if (!bcm2835_init()) {
-			fprintf(stderr, "bcm2835_init failed\n");
-			exit(1);
-		}
-
 		flipdot_init();
 		flipdot_clear_to_0();
 	}
