@@ -126,6 +126,7 @@ static inline void _hw_clr(uint8_t gpio) { _hw_clr_multi(1 << gpio); }
 
 #else
 
+static void
 _hw_set(uint8_t gpio)
 {
 	bcm2835_gpio_set(gpio);
